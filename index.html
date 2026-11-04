@@ -91,7 +91,11 @@ input[type=date],input[type=time]{-webkit-appearance:none;appearance:none;min-he
 .md label input{width:100%;margin-top:4px}
 .md .chips{flex-wrap:wrap;overflow:visible}
 .md .chips .btn{flex:1 1 40%!important}
+.prow .seg{flex:1 1 100%;margin-top:8px}
+.prow .seg button{flex:1}
+.prow .x{flex:0 0 auto;width:38px;height:38px;min-width:0;min-height:0;border:1px solid var(--bd);border-radius:50%;font-size:15px;line-height:1}
 </style>
+<script src="config.js"></script>
 </head>
 <body>
 <header class="hd"><span aria-hidden="true">🎾</span><b>Tennis Session</b><button id="livebtn" data-a="live" hidden style="font-size:15px;font-weight:700;border:1px solid #fff9;border-radius:16px;padding:0 12px;min-height:34px">Go live</button><button data-a="gear" aria-label="Settings">⚙</button></header>
@@ -99,11 +103,8 @@ input[type=date],input[type=time]{-webkit-appearance:none;appearance:none;min-he
 <nav id="nav"></nav>
 <div id="modal"></div><div id="toast" role="status"></div>
 <script>
-/* ===== LIVE SYNC SETUP =====
-   Paste your Firebase Realtime Database URL between the quotes, e.g.
-   https://your-project-default-rtdb.firebaseio.com
-   Leave it empty to use the app on one phone only. */
-const DB_URL="https://tennis-match-10a29-default-rtdb.asia-southeast1.firebasedatabase.app/";
+/* Live sync: the Firebase URL is set in config.js (next to this file). */
+const DB_URL=(window.DB_URL||"");
 const CID=Math.random().toString(36).slice(2,10),SHARED=["players","matches","rest","set","info","date"];
 let CODE=((location.hash||"").slice(1).trim().toLowerCase()),live=false,applying=false,pt,es,pullT;
 if(!/^[a-z0-9]{6,12}$/.test(CODE))CODE="";
@@ -185,7 +186,7 @@ function vSettings(){
     <label>Courts <span class="step"><button data-a="courts" data-v="-1" aria-label="Fewer courts">−</button><b>${S.set.courts}</b><button data-a="courts" data-v="1" aria-label="More courts">+</button></span></label>
     <label>Format <select data-s="format">${[["auto","Auto"],["singles","Singles"],["doubles","Doubles"]].map(([k,t])=>`<option value="${k}"${S.set.format===k?" selected":""}>${t}</option>`).join("")}</select></label>
     <label>Pairing <select data-s="pair">${Object.entries(PAIR).map(([k,t])=>`<option value="${k}"${S.set.pair===k?" selected":""}>${t}</option>`).join("")}</select></label>
-    <label>Match ends <select data-s="mode"><option value="first"${S.set.mode==="first"?" selected":""}>First to</option><option value="total"${S.set.mode==="total"?" selected":""}>Total games</option></select>
+    <label>Match ends <select data-s="mode"><option value="first"${S.set.mode==="first"?" selected":""}>First to</option><option value="total"${S.set.mode==="total"?" selected":""}>Total games (auto-fill)</option></select>
     ${S.set.mode==="total"?`<select data-s="total">${[4,6,8,16,24,32].map(n=>`<option${S.set.total===n?" selected":""}>${n}</option>`).join("")}</select>`:`<select data-s="target">${[3,4,6,8].map(n=>`<option${T===n?" selected":""}>${n}</option>`).join("")}</select>`}</label>
     <p class="mut" style="margin:0">Changes apply to the next round and to scores not saved yet.</p></div>`;
 }
@@ -220,8 +221,8 @@ function vPlayers(){
     <div class="row"><button class="btn pri" data-a="add" data-v="here">Add as here</button><button class="btn" data-a="add" data-v="late">Add as not arrived</button></div></div>
   <p class="mut">${h} here${l?", "+l+" not arrived yet":""}. Add people any time, even mid-session.</p>
   ${S.players.map(p=>`<div class="card prow ${p.status}"><div class="pn"><b>${esc(p.name)}</b><span class="mut">${cnt(p.id)} played</span></div>
-    <div class="seg">${[["here","Here"],["late","Not yet"],["left","Left"]].map(([k,t])=>`<button class="${p.status===k?"on "+k:""}" data-a="st" data-id="${p.id}" data-v="${k}">${t}</button>`).join("")}</div>
-    ${cnt(p.id)?"":`<button class="x" data-a="rm" data-id="${p.id}" aria-label="Remove ${esc(p.name)}">✕</button>`}</div>`).join("")||'<p class="mut">Add the first player to get started.</p>'}`;
+    ${cnt(p.id)?"":`<button class="x" data-a="rm" data-id="${p.id}" aria-label="Remove ${esc(p.name)}">✕</button>`}<div class="seg">${[["here","Here"],["late","Not yet"],["left","Left"]].map(([k,t])=>`<button class="${p.status===k?"on "+k:""}" data-a="st" data-id="${p.id}" data-v="${k}">${t}</button>`).join("")}</div>
+    </div>`).join("")||'<p class="mut">Add the first player to get started.</p>'}`;
 }
 function vBoard(){
   const st=stats(),pct=r=>r.w+r.l?r.w/(r.w+r.l):0;
@@ -316,11 +317,12 @@ function vModal(){
   <h3>${m["t"+ED.side].map(nm).join(" &amp; ")}</h3>
   <span class="mut">${m.cap?"Total "+m.cap+" games, so the most is "+max:"First to "+max+", so the most is "+max}</span>
   <div class="vr"><button data-a="mstep" data-v="-1" aria-label="Minus one">−</button><b>${v}</b><button data-a="mstep" data-v="1" aria-label="Plus one">+</button></div>
-  ${m.cap?`<p class="mut" style="text-align:center;margin:0 0 12px">${m["t"+o].map(nm).join(" &amp; ")} will be set to ${m.cap-v}</p>`:""}
+  ${m.cap?`<p class="mut" style="text-align:center;margin:0 0 12px">${m["t"+o].map(nm).join(" &amp; ")} will be set to ${m.cap-v}</p>`:'<p class="mut" style="text-align:center;margin:0 0 12px">Auto-fill is only on in Total games mode. Change it in the ⚙ settings.</p>'}
   <div class="pad">${[1,2,3,4,5,6,7,8,9].map(d=>`<button data-a="mkey" data-v="${d}">${d}</button>`).join("")}<button data-a="mkey" data-v="C" aria-label="Clear">C</button><button data-a="mkey" data-v="0">0</button><button data-a="mkey" data-v="B" aria-label="Backspace">⌫</button></div>
   <div class="row"><button class="btn" data-a="mclose">Cancel</button><button class="btn pri" data-a="msave">Save score</button></div></div></div>`;
 }
 function render(){
+  if(!S.set.mig){S.set.mig=1;S.set.mode="total"}
   S.matches.forEach(m=>{if(!m.done){m.cap=S.set.mode==="total"?S.set.total:0;m.T=S.set.target}});
   const nv=$("#nm")?$("#nm").value:"";
   $("#app").innerHTML=S.tab==="rounds"?vRounds():S.tab==="players"?vPlayers():vBoard();
