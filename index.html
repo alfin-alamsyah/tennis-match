@@ -79,6 +79,18 @@ tr.top td{background:var(--ball);color:#1d2a05;font-weight:700}tr.dim td{color:v
 #toast{position:fixed;left:50%;bottom:calc(80px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:15px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90%;text-align:center}
 #toast.on{opacity:1}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+html{-webkit-text-size-adjust:100%;touch-action:manipulation}
+html,body{max-width:100%;overflow-x:hidden}
+button,select,label,input{touch-action:manipulation}
+button{-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+input,select{min-width:0;max-width:100%;font-size:16px}
+input[type=date],input[type=time]{-webkit-appearance:none;appearance:none;min-height:46px;text-align:left;display:block}
+.row>*{min-width:0}
+.md{overflow-x:hidden}
+.md label{display:block;min-width:0}
+.md label input{width:100%;margin-top:4px}
+.md .chips{flex-wrap:wrap;overflow:visible}
+.md .chips .btn{flex:1 1 40%!important}
 </style>
 </head>
 <body>
@@ -95,7 +107,7 @@ const DB_URL="https://tennis-match-10a29-default-rtdb.asia-southeast1.firebaseda
 const CID=Math.random().toString(36).slice(2,10),SHARED=["players","matches","rest","set","info","date"];
 let CODE=((location.hash||"").slice(1).trim().toLowerCase()),live=false,applying=false,pt,es,pullT;
 if(!/^[a-z0-9]{6,12}$/.test(CODE))CODE="";
-const KEY="tennis-session-v1"+(CODE?"-"+CODE:""),DEF={courts:1,format:"auto",target:4,pair:"ams",mode:"first",total:4};
+const KEY="tennis-session-v1"+(CODE?"-"+CODE:""),DEF={courts:1,format:"auto",target:4,pair:"ams",mode:"total",total:4};
 let S={players:[],matches:[],rest:{},set:{...DEF},tab:"rounds",cur:0,gear:false,date:0};
 try{const r=localStorage.getItem(KEY);if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
 S.set=Object.assign({...DEF},S.set);S.rest=S.rest||{};S.info=S.info||{};if(S.tab==="matches")S.tab="rounds";
@@ -175,7 +187,7 @@ function vSettings(){
     <label>Pairing <select data-s="pair">${Object.entries(PAIR).map(([k,t])=>`<option value="${k}"${S.set.pair===k?" selected":""}>${t}</option>`).join("")}</select></label>
     <label>Match ends <select data-s="mode"><option value="first"${S.set.mode==="first"?" selected":""}>First to</option><option value="total"${S.set.mode==="total"?" selected":""}>Total games</option></select>
     ${S.set.mode==="total"?`<select data-s="total">${[4,6,8,16,24,32].map(n=>`<option${S.set.total===n?" selected":""}>${n}</option>`).join("")}</select>`:`<select data-s="target">${[3,4,6,8].map(n=>`<option${T===n?" selected":""}>${n}</option>`).join("")}</select>`}</label>
-    <p class="mut" style="margin:0">Changes apply to the next round.</p></div>`;
+    <p class="mut" style="margin:0">Changes apply to the next round and to scores not saved yet.</p></div>`;
 }
 function card(m){
   
@@ -309,6 +321,7 @@ function vModal(){
   <div class="row"><button class="btn" data-a="mclose">Cancel</button><button class="btn pri" data-a="msave">Save score</button></div></div></div>`;
 }
 function render(){
+  S.matches.forEach(m=>{if(!m.done){m.cap=S.set.mode==="total"?S.set.total:0;m.T=S.set.target}});
   const nv=$("#nm")?$("#nm").value:"";
   $("#app").innerHTML=S.tab==="rounds"?vRounds():S.tab==="players"?vPlayers():vBoard();
   $("#modal").innerHTML=ED?vModal():SH?vShare():LK?vLink():"";
@@ -338,7 +351,7 @@ document.addEventListener("click",e=>{
   else if(a==="reshuf"){S.draft=null}
   else if(a==="live"){if(!live){const al="abcdefghjkmnpqrstuvwxyz23456789";let c="";for(let i=0;i<8;i++)c+=al[Math.floor(Math.random()*al.length)];goLive(c)}LK=true}
   else if(a==="lkclose"){if(b.classList.contains("ov")&&e.target!==b)return;LK=false}
-  else if(a==="lkcopy"){const u=location.href;(navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>toast("Link copied")).catch(()=>{const i=$("#lkurl");if(i){i.select();toast("Select and copy the link")}});return}
+  else if(a==="lkcopy"){const u=location.href;(navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>{LK=false;render();toast("Link copied. Send it to your friends.")}).catch(()=>{const i=$("#lkurl");if(i){i.select();toast("Select and copy the link")}});return}
   else if(a==="share"){SH={tpl:"blue",title:"Tennis Session",img:null,cv:null,size:"port",pos:"bottom",titleOn:true}}
   else if(a==="shtpl"){SH.tpl=v}
   else if(a==="shclose"){if(b.classList.contains("ov")&&e.target!==b)return;SH=null}
