@@ -115,7 +115,7 @@ try{const r=localStorage.getItem(KEY);if(r)S=Object.assign(S,JSON.parse(r))}catc
 S.set=Object.assign({...DEF},S.set);S.rest=S.rest||{};S.info=S.info||{};if(S.tab==="matches")S.tab="rounds";
 S.matches.forEach((m,i)=>{if(!m.r){m.r=i+1;m.court=1}});
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}push()};
-let uid=Date.now(),armed=false,foc=false,tt,ED=null,SH=null,DL=null,LK=false;
+let uid=Date.now(),armed=false,foc=false,tt,ED=null,SH=null,DL=null,LK=false,SV=null;
 const nid=()=>String(uid++),$=s=>document.querySelector(s),P=id=>S.players.find(p=>p.id===id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const nm=i=>esc(P(i)?P(i).name:"?"),pad=n=>String(n).padStart(2,"0");
@@ -337,8 +337,8 @@ function render(){
   S.matches.forEach(m=>{if(!m.done){m.cap=S.set.mode==="total"?S.set.total:0;m.T=S.set.target}});
   const nv=$("#nm")?$("#nm").value:"";
   $("#app").innerHTML=S.tab==="rounds"?vRounds():S.tab==="players"?vPlayers():vBoard();
-  $("#modal").innerHTML=ED?vModal():SH?vShare():LK?vLink():"";
-  if(SH&&!ED)drawShare();
+  $("#modal").innerHTML=SV?vSave():ED?vModal():SH?vShare():LK?vLink():"";
+  if(SH&&!ED&&!SV)drawShare();
   if($("#nm")){$("#nm").value=nv;if(foc){$("#nm").focus();foc=false}}
   $("#nav").innerHTML=[["rounds","Rounds"],["players","Players"],["board","Leaderboard"]].map(([k,t])=>`<button class="${S.tab===k?"on":""}" data-a="tab" data-v="${k}">${t}</button>`).join("");
   save();
@@ -364,14 +364,24 @@ document.addEventListener("click",e=>{
   else if(a==="reshuf"){S.draft=null}
   else if(a==="live"){if(!live){const al="abcdefghjkmnpqrstuvwxyz23456789";let c="";for(let i=0;i<8;i++)c+=al[Math.floor(Math.random()*al.length)];goLive(c)}LK=true}
   else if(a==="lkclose"){if(b.classList.contains("ov")&&e.target!==b)return;LK=false}
-  else if(a==="lkcopy"){const u=location.href;(navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>{LK=false;render();toast("Link copied. Send it to your friends.")}).catch(()=>{const i=$("#lkurl");if(i){i.select();toast("Select and copy the link")}});return}
+  else if(a==="lkcopy"){const u=location.href;
+    const done=()=>toast("Link copied. Send it to your friends."),
+    fail=()=>{LK=true;render();const i=$("#lkurl");if(i){i.focus();i.select();i.setSelectionRange(0,u.length)}toast("Could not copy. Select and copy the link.")},
+    legacy=()=>{const t=document.createElement("textarea");t.value=u;t.setAttribute("readonly","");t.style.cssText="position:fixed;top:0;left:0;opacity:0";document.body.appendChild(t);t.select();t.setSelectionRange(0,u.length);let ok=false;try{ok=document.execCommand("copy")}catch(er){}t.remove();ok?done():fail()};
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(u).then(done).catch(legacy)}else legacy();
+    LK=false;render();return}
+  else if(a==="svclose"){if(b.classList.contains("ov")&&e.target!==b)return;if(SV){try{URL.revokeObjectURL(SV.url)}catch(er){}SV=null}}
   else if(a==="share"){SH={tpl:"blue",title:"Tennis Session",img:null,cv:null,size:"port",pos:"bottom",titleOn:true}}
   else if(a==="shtpl"){SH.tpl=v}
   else if(a==="shclose"){if(b.classList.contains("ov")&&e.target!==b)return;SH=null}
   else if(a==="shsave"){if(!SH.blob){toast("Still preparing the image. Try again in a moment.");return}
-    const nf=new File([SH.blob],"tennis-leaderboard.jpg",{type:"image/jpeg"});
-    if(navigator.canShare&&navigator.canShare({files:[nf]})){navigator.share({files:[nf]}).catch(er=>{if(er&&er.name!=="AbortError")toast("Could not open the share sheet.")});return}
-    (async()=>{try{if(DL)await DL.save({filename:"tennis-leaderboard.jpg",data:SH.blob});else{const u=URL.createObjectURL(SH.blob),el=document.createElement("a");el.href=u;el.download="tennis-leaderboard.jpg";document.body.appendChild(el);el.click();el.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)}toast("Saved")}catch(er){if(!er||er.code!=="declined")toast("Could not save.")}})();return}
+    const bl=SH.blob,nf=new File([bl],"tennis-leaderboard.jpg",{type:"image/jpeg"});
+    const fallback=()=>{
+      if(DL){(async()=>{try{await DL.save({filename:"tennis-leaderboard.jpg",data:bl});toast("Saved")}catch(er){if(!er||er.code!=="declined")toast("Could not save.")}})();return}
+      SV={url:URL.createObjectURL(bl)};render()};
+    /* Call share directly (no canShare pre-check): Safari can report false there. Fall back to a long-press save view, never a Files download. */
+    if(navigator.share){try{navigator.share({files:[nf]}).catch(er=>{if(!er||er.name!=="AbortError")fallback()})}catch(er){fallback()}return}
+    fallback();return}
   else if(a==="ed"){const m=M();ED={id,side:+v,val:String(m["s"+v])}}
   else if(a==="mclose"){if(b.classList.contains("ov")&&e.target!==b)return;ED=null}
   else if(a==="mstep"){const m=S.matches.find(x=>x.id===ED.id);ED.val=String(Math.min(lim(m),Math.max(0,+ED.val+ +v)))}
@@ -406,6 +416,11 @@ function goLive(c){CODE=c;live=true;history.replaceState(null,"",location.pathna
   es=new EventSource(node());["put","patch"].forEach(ev=>es.addEventListener(ev,()=>{clearTimeout(pullT);pullT=setTimeout(pull,120)}));
   es.onerror=()=>setLive("err");pull()}
 document.addEventListener("visibilitychange",()=>{if(live&&!document.hidden)pull()});
+function vSave(){return `<div class="ov" data-a="svclose"><div class="md" style="max-height:92vh;overflow-y:auto" role="dialog" aria-modal="true" aria-label="Save image">
+  <h3>Save to Photos</h3>
+  <p class="mut" style="margin:4px 0 0">Press and hold the image, then tap <b>Save to Photos</b> (or Add to Photos).</p>
+  <img src="${SV.url}" alt="Leaderboard" style="width:100%;max-height:60vh;object-fit:contain;border-radius:10px;margin:10px 0;background:var(--bg);-webkit-touch-callout:default;-webkit-user-select:auto;user-select:auto">
+  <div class="row"><button class="btn" data-a="svclose">Close</button><a class="btn" style="text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center;color:var(--tx)" href="${SV.url}" download="tennis-leaderboard.jpg">Download file</a></div></div></div>`}
 function vLink(){return `<div class="ov" data-a="lkclose"><div class="md" role="dialog" aria-modal="true" aria-label="Live link"><h3>Live match link</h3>
   <p class="mut">Anyone with this link can watch live and enter scores. Send it to your friends.</p>
   <input id="lkurl" readonly value="${esc(location.href)}">
