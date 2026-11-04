@@ -124,12 +124,17 @@ const rn=()=>[...new Set(S.matches.map(m=>m.r))].sort((a,b)=>a-b);
 const PAIR={ams:"Americano",mex:"Mexicano",koth:"King of the hill"};
 function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("on");clearTimeout(tt);tt=setTimeout(()=>t.classList.remove("on"),2200)}
 function stats(){
-  const m={};S.players.forEach(p=>m[p.id]={w:0,d:0,l:0,gf:0,ga:0});
-  const add=(o,f,a,r)=>{if(!o)return;o.gf+=f;o.ga+=a;r>0?o.w++:r<0?o.l++:o.d++};
-  S.matches.filter(x=>x.done).forEach(x=>{const r=Math.sign(x.s1-x.s2);
+  const m={};S.players.forEach(p=>m[p.id]={w:0,d:0,l:0,gf:0,ga:0,n:0,mc:0,tot:0});
+  const add=(o,f,a,r)=>{if(!o)return;o.gf+=f;o.ga+=a;o.n++;r>0?o.w++:r<0?o.l++:o.d++};
+  const dn=S.matches.filter(x=>x.done);
+  dn.forEach(x=>{const r=Math.sign(x.s1-x.s2);
     x.t1.forEach(i=>add(m[i],x.s1,x.s2,r));x.t2.forEach(i=>add(m[i],x.s2,x.s1,-r))});
+  /* Americano points: each player gets the points their team scored. Missed matches (vs the most-played player) are compensated with half a match's points each. */
+  const vs=Object.values(m),mx=Math.max(0,...vs.map(o=>o.n)),avg=dn.length?dn.reduce((s,x)=>s+(x.s1+x.s2)/2,0)/dn.length:0;
+  vs.forEach(o=>{o.mc=o.n?Math.round((mx-o.n)*avg):0;o.tot=o.gf+o.mc});
   return m;
 }
+const rankCmp=(a,b)=>b.tot-a.tot||(b.gf-b.ga)-(a.gf-a.ga)||b.w-a.w||a.p.name.localeCompare(b.p.name);
 function plan(R){
   
   
@@ -145,7 +150,7 @@ function plan(R){
       if(win.length*2===need&&win.every(i=>P(i)&&P(i).status==="here")){
         const ch=pool.filter(i=>!win.includes(i)).slice(0,win.length);
         if(ch.length===win.length)out=[{t1:win,t2:ch}]}}}
-  if(!out&&S.set.pair==="mex"){const st=stats(),sc=i=>st[i].w*1000+st[i].d*500+st[i].gf-st[i].ga,a=[...chosen].sort((x,y)=>sc(y)-sc(x));out=[];
+  if(!out&&S.set.pair==="mex"){const st=stats(),sc=i=>st[i].tot*1000+st[i].gf-st[i].ga,a=[...chosen].sort((x,y)=>sc(y)-sc(x));out=[];
     for(let i=0;i<n;i++){const g=a.slice(i*need,i*need+need);out.push(need===4?{t1:[g[0],g[3]],t2:[g[1],g[2]]}:{t1:[g[0]],t2:[g[1]]})}}
   if(!out){
     const key=(a,b)=>a<b?a+"|"+b:b+"|"+a,pc={},oc={};
@@ -226,12 +231,12 @@ function vPlayers(){
     </div>`).join("")||'<p class="mut">Add the first player to get started.</p>'}`;
 }
 function vBoard(){
-  const st=stats(),pct=r=>r.w+r.l?r.w/(r.w+r.l):0;
-  const rows=S.players.map(p=>({p,...st[p.id]})).sort((a,b)=>b.w-a.w||b.d-a.d||(b.gf-b.ga)-(a.gf-a.ga)||pct(b)-pct(a)||a.p.name.localeCompare(b.p.name));
+  const st=stats();
+  const rows=S.players.map(p=>({p,...st[p.id]})).sort(rankCmp);
   return `<h1>Leaderboard</h1><br>
-  ${rows.length?`<div class="card" style="overflow-x:auto"><table><tr><th>#</th><th>Player</th><th>W</th><th>D</th><th>L</th><th>Games +/−</th></tr>
-  ${rows.map((r,i)=>{const d=r.gf-r.ga,pl=r.w+r.d+r.l;return `<tr class="${i===0&&pl?"top":pl?"":"dim"}"><td>${i+1}</td><td>${esc(r.p.name)}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${d>0?"+":""}${d}</td></tr>`}).join("")}</table></div>
-  <p class="mut">Ranked by wins, then draws, then game difference. Doubles results count for each player on the team.</p>`:'<p class="mut">Add players and save a result to see rankings.</p>'}
+  ${rows.length?`<div class="card" style="overflow-x:auto"><table><tr><th>#</th><th>Player</th><th>G</th><th>W-D-L</th><th>Diff</th><th>+M</th><th>P</th></tr>
+  ${rows.map((r,i)=>{const d=r.gf-r.ga;return `<tr class="${i===0&&r.n?"top":r.n?"":"dim"}"><td>${i+1}</td><td>${esc(r.p.name)}</td><td>${r.n}</td><td>${r.w}-${r.d}-${r.l}</td><td>${d>0?"+":""}${d}</td><td>${r.mc}</td><td><b>${r.tot}</b></td></tr>`}).join("")}</table></div>
+  <p class="mut"><b>P</b> = points scored + <b>+M</b>. Each player gets the points their team scored. <b>+M</b> compensates missed matches (compared with the player with the most matches) at half a match of points each. <b>G</b> = games played, <b>Diff</b> = points scored − conceded. Ties are broken by Diff, then wins.</p>`:'<p class="mut">Add players and save a result to see rankings.</p>'}
   ${rows.length?'<button class="btn pri big" data-a="share">Share as image</button>':""}
   <button class="btn big ghost" data-a="reset">${armed?"Tap again to clear everything":"Start a new session"}</button>`;
 }
@@ -267,7 +272,7 @@ function paint(sc){
   if(im){const s=Math.max(W/im.width,H/im.height),w=im.width*s,h=im.height*s;x.drawImage(im,(W-w)/2,(H-h)/2,w,h);
     const sh=x.createLinearGradient(0,0,0,H);sh.addColorStop(0,"#000a");sh.addColorStop(.3,"#0000");sh.addColorStop(.65,"#0000");sh.addColorStop(1,"#000b");x.fillStyle=sh;x.fillRect(0,0,W,H)}
   if(!ph){x.strokeStyle=t.ac;x.lineWidth=10;x.strokeRect(30,30,W-60,H-60)}
-  const st=stats(),rows=S.players.map(p=>({p,...st[p.id]})).filter(r=>r.w+r.d+r.l>0).sort((a,b)=>b.w-a.w||b.d-a.d||(b.gf-b.ga)-(a.gf-a.ga)||a.p.name.localeCompare(b.p.name)).slice(0,ph?5:10),n=rows.length;
+  const st=stats(),rows=S.players.map(p=>({p,...st[p.id]})).filter(r=>r.w+r.d+r.l>0).sort(rankCmp).slice(0,ph?5:10),n=rows.length;
   const rh=ph?68:Math.min(110,(H-330-120)/Math.max(n,1)),k=Math.min(1,rh/96),off=ph?0:Math.max(0,(H-1350)/2);
   const ty=ph?110:160+off,dt=detail(),lines=(tt?1:0)+(dt?1:0);
   const y0=ph?(SH.pos==="top"?(lines===2?240:lines===1?170:90):H-80-n*rh):(lines===2?290:lines===1?230:170)+off;
@@ -277,15 +282,16 @@ function paint(sc){
     x.fillStyle=t.sub;if(ph){x.shadowColor="#0008";x.shadowBlur=10}x.fillText(dt,W/2,yy);x.shadowBlur=0}
   const L=ph?110:80,dx=ph?140:120;
   if(!n){x.fillStyle=t.hd;x.font=F(600,40);x.fillText("No results yet",W/2,ph?H/2:y0+80)}
-  else{x.fillStyle=t.sub;x.font=F(600,ph?22:26);x.fillText("W-D-L",ph?690:700,y0-16);x.textAlign="right";x.fillText("Games +/\u2212",W-dx,y0-16)}
+  else{x.fillStyle=t.sub;x.font=F(600,ph?22:26);x.fillText("W-D-L",ph?620:630,y0-16);x.textAlign="right";x.fillText("Diff",W-dx-120,y0-16);x.fillText("Pts",W-dx,y0-16)}
   rows.forEach((r,i)=>{
     const y=y0+i*rh,top=i===0,gap=ph?8:14,cy=y+(rh-gap)/2;
     x.fillStyle=top?t.ac:t.card;x.beginPath();if(x.roundRect)x.roundRect(L,y,W-2*L,rh-gap,ph?16:22);else x.rect(L,y,W-2*L,rh-gap);x.fill();
     x.fillStyle=top?t.on:t.tx;x.textBaseline="middle";
     x.textAlign="center";x.font=F(800,44*k);x.fillText(String(i+1),L+55,cy);
-    x.textAlign="left";x.font=F(700,42*k);let nm2=r.p.name;while(nm2.length>1&&x.measureText(nm2).width>400)nm2=nm2.slice(0,-1);x.fillText(nm2,L+120,cy);
-    x.textAlign="center";x.font=F(600,34*k);x.fillText(r.w+"-"+r.d+"-"+r.l,ph?690:700,cy);
-    const d=r.gf-r.ga;x.textAlign="right";x.font=F(800,40*k);x.fillText((d>0?"+":"")+d,W-dx,cy);
+    x.textAlign="left";x.font=F(700,42*k);let nm2=r.p.name;while(nm2.length>1&&x.measureText(nm2).width>320)nm2=nm2.slice(0,-1);x.fillText(nm2,L+120,cy);
+    x.textAlign="center";x.font=F(600,34*k);x.fillText(r.w+"-"+r.d+"-"+r.l,ph?620:630,cy);
+    const d=r.gf-r.ga;x.textAlign="right";x.font=F(600,36*k);x.fillText((d>0?"+":"")+d,W-dx-120,cy);
+    x.font=F(800,44*k);x.fillText(String(r.tot),W-dx,cy);
   });
   if(sc<1){SH.cv=cv;const el=$("#shimg");if(el)el.src=cv.toDataURL("image/jpeg",.9)}return cv;
 }
