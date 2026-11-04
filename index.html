@@ -186,7 +186,7 @@ function vSettings(){
     <label>Courts <span class="step"><button data-a="courts" data-v="-1" aria-label="Fewer courts">−</button><b>${S.set.courts}</b><button data-a="courts" data-v="1" aria-label="More courts">+</button></span></label>
     <label>Format <select data-s="format">${[["auto","Auto"],["singles","Singles"],["doubles","Doubles"]].map(([k,t])=>`<option value="${k}"${S.set.format===k?" selected":""}>${t}</option>`).join("")}</select></label>
     <label>Pairing <select data-s="pair">${Object.entries(PAIR).map(([k,t])=>`<option value="${k}"${S.set.pair===k?" selected":""}>${t}</option>`).join("")}</select></label>
-    <label>Match ends <select data-s="mode"><option value="first"${S.set.mode==="first"?" selected":""}>First to</option><option value="total"${S.set.mode==="total"?" selected":""}>Total games (auto-fill)</option></select>
+    <label>Match ends <select data-s="mode"><option value="first"${S.set.mode==="first"?" selected":""}>First to</option><option value="total"${S.set.mode==="total"?" selected":""}>Total games</option></select>
     ${S.set.mode==="total"?`<select data-s="total">${[4,6,8,16,24,32].map(n=>`<option${S.set.total===n?" selected":""}>${n}</option>`).join("")}</select>`:`<select data-s="target">${[3,4,6,8].map(n=>`<option${T===n?" selected":""}>${n}</option>`).join("")}</select>`}</label>
     <p class="mut" style="margin:0">Changes apply to the next round and to scores not saved yet.</p></div>`;
 }
@@ -286,7 +286,7 @@ function drawShare(){
     x.textAlign="center";x.font=F(600,34*k);x.fillText(r.w+"-"+r.d+"-"+r.l,ph?690:700,cy);
     const d=r.gf-r.ga;x.textAlign="right";x.font=F(800,40*k);x.fillText((d>0?"+":"")+d,W-dx,cy);
   });
-  SH.cv=cv;const el=$("#shimg");if(el)el.src=cv.toDataURL("image/jpeg",.92);
+  SH.cv=cv;SH.blob=null;cv.toBlob(b=>{if(SH&&SH.cv===cv)SH.blob=b},"image/jpeg",.92);const el=$("#shimg");if(el)el.src=cv.toDataURL("image/jpeg",.92);
 }
 function vShare(){
   const opt=(k,l,cur)=>`<option value="${k}"${cur===k?" selected":""}>${l}</option>`;
@@ -305,8 +305,8 @@ function vShare(){
   <input data-in="format" value="${esc(S.info.format===undefined?autoFmt():S.info.format)}" maxlength="24" placeholder="Format, e.g. Doubles" aria-label="Format" style="margin-top:8px">
   <p class="mut" style="margin:6px 0 0">The line under the title reads Place | Date | Format. Clear a box to leave it out.</p>
   ${SH.tpl==="photo"?'<input id="shph" type="file" accept="image/*" style="margin-top:8px" aria-label="Choose a photo">':""}
-  <div class="row"><button class="btn" data-a="shclose">Close</button><button class="btn pri" data-a="shsave">Save JPG</button></div>
-  ${DL?"":'<p class="mut" style="margin:8px 0 0">Press and hold the image to save it.</p>'}
+  <div class="row"><button class="btn" data-a="shclose">Close</button><button class="btn pri" data-a="shsave">Save / share image</button></div>
+  ${DL?"":'<p class="mut" style="margin:8px 0 0">Tap Save / share image, then choose Save Image to add it to your Photos.</p>'}
   </div></div>`;
 }
 const lim=m=>m.cap||(m.T||S.set.target);
@@ -357,7 +357,9 @@ document.addEventListener("click",e=>{
   else if(a==="share"){SH={tpl:"blue",title:"Tennis Session",img:null,cv:null,size:"port",pos:"bottom",titleOn:true}}
   else if(a==="shtpl"){SH.tpl=v}
   else if(a==="shclose"){if(b.classList.contains("ov")&&e.target!==b)return;SH=null}
-  else if(a==="shsave"){SH.cv.toBlob(async bl=>{try{if(DL)await DL.save({filename:"tennis-leaderboard.jpg",data:bl});else{const u=URL.createObjectURL(bl),el=document.createElement("a");el.href=u;el.download="tennis-leaderboard.jpg";document.body.appendChild(el);el.click();el.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)}toast("Saved")}catch(er){if(!er||er.code!=="declined")toast("Could not save. Press and hold the image instead.")}},"image/jpeg",.92);return}
+  else if(a==="shsave"){const nf=SH.blob?new File([SH.blob],"tennis-leaderboard.jpg",{type:"image/jpeg"}):null;
+    if(nf&&navigator.canShare&&navigator.canShare({files:[nf]})){navigator.share({files:[nf]}).catch(er=>{if(er&&er.name!=="AbortError")toast("Could not open the share sheet.")});return}
+    SH.cv.toBlob(async bl=>{try{if(DL)await DL.save({filename:"tennis-leaderboard.jpg",data:bl});else{const u=URL.createObjectURL(bl),el=document.createElement("a");el.href=u;el.download="tennis-leaderboard.jpg";document.body.appendChild(el);el.click();el.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)}toast("Saved")}catch(er){if(!er||er.code!=="declined")toast("Could not save. Press and hold the image instead.")}},"image/jpeg",.92);return}
   else if(a==="ed"){const m=M();ED={id,side:+v,val:String(m["s"+v])}}
   else if(a==="mclose"){if(b.classList.contains("ov")&&e.target!==b)return;ED=null}
   else if(a==="mstep"){const m=S.matches.find(x=>x.id===ED.id);ED.val=String(Math.min(lim(m),Math.max(0,+ED.val+ +v)))}
