@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tennis Session</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap">
+<style>
+:root{--hd:#2563eb;--bg:#f0f0f1;--card:#fff;--tx:#14213d;--mut:#64708a;--bd:#d9dde5;--ac:#2563eb;--onac:#fff;--ball:#d6e64a;--ok:#16a34a;--warn:#b25e00;--b1:#000;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);background:var(--hd)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--hd:#1e3a8a;--bg:#0f1623;--card:#1a2335;--tx:#e8edf6;--mut:#9aa6bd;--bd:#2c374d;--ac:#6b9bff;--onac:#0b1a3a;--ok:#4ade80;--warn:#ffb15c;--b1:#05080f;color-scheme:dark}}
+:root[data-theme="dark"]{--hd:#1e3a8a;--bg:#0f1623;--card:#1a2335;--tx:#e8edf6;--mut:#9aa6bd;--bd:#2c374d;--ac:#6b9bff;--onac:#0b1a3a;--ok:#4ade80;--warn:#ffb15c;--b1:#05080f;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--tx);font:16px/1.4 'Plus Jakarta Sans',system-ui,sans-serif}
+.hd{background:var(--hd);color:#fff;display:flex;align-items:center;gap:10px;padding:14px 16px;font-size:20px;font-weight:800}
+.hd b{flex:1}.hd button{background:none;border:0;color:#fff;font-size:24px;min-width:44px;min-height:44px;cursor:pointer}
+main{max-width:560px;margin:0 auto;padding:16px 16px 100px}
+h1,h2{margin:0;font-weight:800}h1{font-size:26px}h2{font-size:24px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px;margin-bottom:10px}
+.mut{color:var(--mut);font-size:14px}
+input,select{font:inherit;color:inherit;background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:10px;width:100%}
+select{width:auto;padding:6px 8px}
+.row{display:flex;gap:8px;margin-top:8px}
+.btn{font:700 15px 'Plus Jakarta Sans',sans-serif;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:10px;padding:10px 14px;min-height:44px;flex:1;cursor:pointer}
+.btn.pri{background:var(--ac);border-color:var(--ac);color:var(--onac)}
+.btn.ghost{background:none}.btn.big{width:100%;margin-top:6px}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+.info{display:grid;grid-template-columns:1fr auto;gap:8px 12px;color:var(--mut);padding:2px 0 14px;border-bottom:1px solid var(--bd);margin-bottom:16px}
+.info .rt{text-align:right}
+.set{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+.set label{display:flex;align-items:center;gap:8px;font-weight:600}
+.step{display:inline-flex;align-items:center;gap:8px}
+.step button,.stp button{width:44px;height:44px;border-radius:50%;border:1px solid var(--bd);background:var(--card);color:var(--tx);font-size:22px;cursor:pointer}
+.sec{display:flex;align-items:center;justify-content:space-between;margin:6px 0 10px}
+.chips{display:flex;gap:10px;overflow-x:auto;padding:4px 2px 12px}
+.chip{position:relative;flex:0 0 58px;height:50px;border-radius:10px;border:1px solid var(--bd);background:var(--card);color:var(--tx);font:700 18px 'Plus Jakarta Sans',sans-serif;cursor:pointer}
+.chip.on{background:var(--ac);border-color:var(--ac);color:var(--onac)}
+.chip i{position:absolute;top:1px;right:6px;font-size:13px;font-style:normal;color:var(--ok)}
+.chip.on i{color:var(--onac)}
+.mc{margin:34px 0 8px}
+.mw{position:relative;background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:34px 16px 16px}
+.sb{position:absolute;top:-18px;left:50%;transform:translateX(-50%);display:flex;gap:6px}
+.sb button{min-width:58px;border:0;font:700 30px/1 'Plus Jakarta Sans',sans-serif;padding:8px 10px;border-radius:8px;color:#fff;cursor:pointer}
+.b1{background:var(--b1)}.b2{background:var(--hd)}
+.ck{position:absolute;top:-12px;left:14px;width:26px;height:26px;border-radius:50%;background:var(--bg);border:2px solid var(--bd);color:#fff;font-size:15px;text-align:center;line-height:22px}
+.ck.on{background:var(--ac);border-color:var(--ac);color:var(--onac)}
+.ct{position:absolute;top:-14px;right:12px;background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:2px 10px;font-weight:700;font-size:14px}
+.tms{display:grid;grid-template-columns:1fr 1fr;font-size:18px;line-height:1.9}
+.tms div+div{text-align:right;border-left:1px solid var(--bd);padding-left:8px}
+.stp{display:flex;justify-content:space-between;margin-top:10px}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;z-index:20}
+.md{background:var(--card);width:100%;max-width:560px;border-radius:20px 20px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom,0px))}
+.md h3{margin:0 0 2px;font-size:20px}
+.vr{display:flex;align-items:center;justify-content:center;gap:18px;margin:14px 0}
+.vr button{width:56px;height:56px;border-radius:50%;border:1px solid var(--bd);background:var(--card);color:var(--tx);font-size:28px;cursor:pointer}
+.vr b{font-size:64px;line-height:1;min-width:90px;text-align:center}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pad button{min-height:52px;border-radius:12px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);font:700 22px 'Plus Jakarta Sans',sans-serif;cursor:pointer}
+.rest{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-top:22px;color:var(--mut)}
+.rest b{color:var(--tx)}
+.up{background:var(--card);border:2px dashed var(--ac);border-radius:12px;padding:14px;margin-top:14px}
+.up p{margin:6px 0}.up .btn{margin-top:6px;width:100%}
+.prow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.prow.late{border-style:dashed}.prow.left{opacity:.55}
+.pn{flex:1 1 110px;display:flex;flex-direction:column}
+.seg{display:flex;border:1px solid var(--bd);border-radius:10px;overflow:hidden}
+.seg button{border:0;background:none;color:var(--mut);font:700 14px 'Plus Jakarta Sans',sans-serif;padding:9px 11px;min-height:40px;cursor:pointer}
+.seg button.on{color:var(--bg)}
+.seg button.on.here{background:var(--ok)}.seg button.on.late{background:var(--warn)}.seg button.on.left{background:var(--mut)}
+.tag{font-size:12px;background:var(--ball);color:#1d2a05;border-radius:6px;padding:1px 6px;width:max-content;margin-top:2px}
+.x{border:0;background:none;color:var(--mut);font-size:18px;min-width:40px;min-height:40px;cursor:pointer}
+table{width:100%;border-collapse:collapse}
+th,td{padding:10px 6px;text-align:center;border-bottom:1px solid var(--bd)}
+th{font-weight:600;color:var(--mut);font-size:14px}
+td:nth-child(2),th:nth-child(2){text-align:left}
+tr.top td{background:var(--ball);color:#1d2a05;font-weight:700}tr.dim td{color:var(--mut)}
+#nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--bd);padding-bottom:env(safe-area-inset-bottom,0px)}
+#nav button{flex:1;border:0;background:none;color:var(--mut);font:700 15px 'Plus Jakarta Sans',sans-serif;padding:16px 0;cursor:pointer}
+#nav button.on{color:var(--tx);box-shadow:inset 0 3px 0 var(--ac)}
+#toast{position:fixed;left:50%;bottom:calc(80px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:15px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90%;text-align:center}
+#toast.on{opacity:1}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="hd"><span aria-hidden="true">🎾</span><b>Tennis Session</b><button id="livebtn" data-a="live" hidden style="font-size:15px;font-weight:700;border:1px solid #fff9;border-radius:16px;padding:0 12px;min-height:34px">Go live</button><button data-a="gear" aria-label="Settings">⚙</button></header>
+<main id="app"></main>
+<nav id="nav"></nav>
+<div id="modal"></div><div id="toast" role="status"></div>
+<script>
+/* ===== LIVE SYNC SETUP =====
+   Paste your Firebase Realtime Database URL between the quotes, e.g.
+   https://your-project-default-rtdb.firebaseio.com
+   Leave it empty to use the app on one phone only. */
+const DB_URL="https://tennis-match-10a29-default-rtdb.asia-southeast1.firebasedatabase.app/";
+const CID=Math.random().toString(36).slice(2,10),SHARED=["players","matches","rest","set","info","date"];
+let CODE=((location.hash||"").slice(1).trim().toLowerCase()),live=false,applying=false,pt,es,pullT;
+if(!/^[a-z0-9]{6,12}$/.test(CODE))CODE="";
+const KEY="tennis-session-v1"+(CODE?"-"+CODE:""),DEF={courts:1,format:"auto",target:4,pair:"ams",mode:"first",total:4};
+let S={players:[],matches:[],rest:{},set:{...DEF},tab:"rounds",cur:0,gear:false,date:0};
+try{const r=localStorage.getItem(KEY);if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
+S.set=Object.assign({...DEF},S.set);S.rest=S.rest||{};S.info=S.info||{};if(S.tab==="matches")S.tab="rounds";
+S.matches.forEach((m,i)=>{if(!m.r){m.r=i+1;m.court=1}});
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}push()};
+let uid=Date.now(),armed=false,foc=false,tt,ED=null,SH=null,DL=null,LK=false;
+const nid=()=>String(uid++),$=s=>document.querySelector(s),P=id=>S.players.find(p=>p.id===id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const nm=i=>esc(P(i)?P(i).name:"?"),pad=n=>String(n).padStart(2,"0");
+const cnt=id=>S.matches.filter(x=>x.t1.includes(id)||x.t2.includes(id)).length;
+const rn=()=>[...new Set(S.matches.map(m=>m.r))].sort((a,b)=>a-b);
+const PAIR={ams:"Americano",mex:"Mexicano",koth:"King of the hill"};
+function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("on");clearTimeout(tt);tt=setTimeout(()=>t.classList.remove("on"),2200)}
+function stats(){
+  const m={};S.players.forEach(p=>m[p.id]={w:0,d:0,l:0,gf:0,ga:0});
+  const add=(o,f,a,r)=>{if(!o)return;o.gf+=f;o.ga+=a;r>0?o.w++:r<0?o.l++:o.d++};
+  S.matches.filter(x=>x.done).forEach(x=>{const r=Math.sign(x.s1-x.s2);
+    x.t1.forEach(i=>add(m[i],x.s1,x.s2,r));x.t2.forEach(i=>add(m[i],x.s2,x.s1,-r))});
+  return m;
+}
+function plan(R){
+  
+  
+  
+  const pool=S.players.filter(p=>p.status==="here").map(p=>({id:p.id,c:cnt(p.id),r:Math.random()})).sort((a,b)=>a.c-b.c||a.r-b.r).map(o=>o.id);
+  let fmt=S.set.format;if(fmt==="auto")fmt=pool.length>=4?"doubles":"singles";
+  const need=fmt==="doubles"?4:2;
+  if(pool.length<need)return {err:"Need at least "+need+" players marked Here."};
+  const n=Math.min(S.set.courts,Math.floor(pool.length/need)),chosen=pool.slice(0,n*need);
+  let out=null;
+  if(S.set.pair==="koth"){const lm=[...S.matches].reverse().find(x=>x.done&&x.s1!==x.s2);
+    if(lm){const win=lm.s1>lm.s2?lm.t1:lm.t2;
+      if(win.length*2===need&&win.every(i=>P(i)&&P(i).status==="here")){
+        const ch=pool.filter(i=>!win.includes(i)).slice(0,win.length);
+        if(ch.length===win.length)out=[{t1:win,t2:ch}]}}}
+  if(!out&&S.set.pair==="mex"){const st=stats(),sc=i=>st[i].w*1000+st[i].d*500+st[i].gf-st[i].ga,a=[...chosen].sort((x,y)=>sc(y)-sc(x));out=[];
+    for(let i=0;i<n;i++){const g=a.slice(i*need,i*need+need);out.push(need===4?{t1:[g[0],g[3]],t2:[g[1],g[2]]}:{t1:[g[0]],t2:[g[1]]})}}
+  if(!out){
+    const key=(a,b)=>a<b?a+"|"+b:b+"|"+a,pc={},oc={};
+    S.matches.forEach(x=>{
+      [x.t1,x.t2].forEach(t=>{for(let i=0;i<t.length;i++)for(let j=i+1;j<t.length;j++){const k=key(t[i],t[j]);pc[k]=(pc[k]||0)+1}});
+      x.t1.forEach(a=>x.t2.forEach(b=>{const k=key(a,b);oc[k]=(oc[k]||0)+1}));
+    });
+    let bc=1e9;
+    for(let k=0;k<200;k++){
+      const a=chosen.map(x=>[x,Math.random()]).sort((p,q)=>p[1]-q[1]).map(p=>p[0]),ms=[];let c=0;
+      for(let i=0;i<n;i++){
+        const g=a.slice(i*need,i*need+need);
+        const t1=need===4?[g[0],g[1]]:[g[0]],t2=need===4?[g[2],g[3]]:[g[1]];
+        if(need===4)c+=3*(pc[key(g[0],g[1])]||0)+3*(pc[key(g[2],g[3])]||0);
+        t1.forEach(x=>t2.forEach(y=>c+=oc[key(x,y)]||0));
+        ms.push({t1,t2});
+      }
+      if(c<bc){bc=c;out=ms}
+    }
+  }
+  return {out,rest:pool.filter(i=>!out.some(o=>o.t1.includes(i)||o.t2.includes(i)))};
+  
+  
+  }
+function newRound(){
+  const rs=rn(),last=rs[rs.length-1];
+  if(last&&S.matches.some(m=>m.r===last&&!m.done))return toast("Finish round "+last+" first.");
+  const R=(last||0)+1;
+  let p=S.draft&&S.draft.R===R&&!S.draft.err&&S.set.pair==="ams"?S.draft:null;
+  if(!p){p=plan(R);if(p.err)return toast(p.err)}
+  p.out.forEach((o,i)=>S.matches.push({id:nid(),r:R,court:i+1,t1:o.t1,t2:o.t2,s1:0,s2:0,done:false,cap:S.set.mode==="total"?S.set.total:0,T:S.set.target}));
+  S.rest[R]=p.rest;S.draft=null;
+  if(!S.date)S.date=Date.now();
+  S.cur=R;S.tab="rounds";
+}
+function vSettings(){
+  const T=S.set.target;
+  return `<div class="card set">
+    <label>Courts <span class="step"><button data-a="courts" data-v="-1" aria-label="Fewer courts">−</button><b>${S.set.courts}</b><button data-a="courts" data-v="1" aria-label="More courts">+</button></span></label>
+    <label>Format <select data-s="format">${[["auto","Auto"],["singles","Singles"],["doubles","Doubles"]].map(([k,t])=>`<option value="${k}"${S.set.format===k?" selected":""}>${t}</option>`).join("")}</select></label>
+    <label>Pairing <select data-s="pair">${Object.entries(PAIR).map(([k,t])=>`<option value="${k}"${S.set.pair===k?" selected":""}>${t}</option>`).join("")}</select></label>
+    <label>Match ends <select data-s="mode"><option value="first"${S.set.mode==="first"?" selected":""}>First to</option><option value="total"${S.set.mode==="total"?" selected":""}>Total games</option></select>
+    ${S.set.mode==="total"?`<select data-s="total">${[4,6,8,16,24,32].map(n=>`<option${S.set.total===n?" selected":""}>${n}</option>`).join("")}</select>`:`<select data-s="target">${[3,4,6,8].map(n=>`<option${T===n?" selected":""}>${n}</option>`).join("")}</select>`}</label>
+    <p class="mut" style="margin:0">Changes apply to the next round.</p></div>`;
+}
+function card(m){
+  
+  return `<div class="mc"><div class="mw"><span class="ck ${m.done?"on":""}">${m.done?"✓":""}</span><div class="sb"><button class="b1" data-a="ed" data-id="${m.id}" data-v="1" aria-label="Enter score for team 1">${pad(m.s1)}</button><button class="b2" data-a="ed" data-id="${m.id}" data-v="2" aria-label="Enter score for team 2">${pad(m.s2)}</button></div><span class="ct">Court ${m.court||1}</span>
+  <div class="tms"><div>${m.t1.map(nm).join("<br>")}</div><div>${m.t2.map(nm).join("<br>")}</div></div></div>
+  ${m.done?`<div class="row"><button class="btn" data-a="edit" data-id="${m.id}">Edit score</button></div>`
+  :`<button class="btn pri big" data-a="fin" data-id="${m.id}">Save result</button>`}</div>`;
+}
+function vRounds(){
+  const rs=rn(),R=rs.includes(S.cur)?S.cur:(rs[rs.length-1]||0),ms=S.matches.filter(m=>m.r===R);
+  const here=S.players.filter(p=>p.status==="here").length,c=S.set.courts;
+  const date=new Date(S.date||Date.now()).toLocaleString([],{month:"2-digit",day:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
+  const rest=(S.rest[R]||[]).filter(i=>P(i));
+  return `<h1>Match Rounds</h1>
+  <div class="info"><div>${PAIR[S.set.pair]}</div><div class="rt">${date}</div><div>${S.set.mode==="total"?"Total "+S.set.total+" games, ties allowed":"First to "+S.set.target}</div><div class="rt">${here} players, ${c} court${c>1?"s":""}</div></div>
+  ${S.gear?vSettings():""}
+  ${rs.length?`<div class="chips">${rs.map(r=>`<button class="chip ${r===R?"on":""}" data-a="round" data-v="${r}" aria-label="Round ${r}">${r}${S.matches.filter(m=>m.r===r).every(m=>m.done)?"<i>✓</i>":""}</button>`).join("")}</div>
+  <div class="sec"><h2>Round #${R}</h2><button class="btn" style="flex:0 0 auto" data-a="next">Next round</button></div>
+  ${ms.some(m=>!m.done)?'<p class="mut" style="margin:6px 0 0">Tap a score box to enter the score.</p>':""}
+  ${ms.map(card).join("")}
+  ${rest.length?`<div class="rest"><b>Rest players:</b> ${rest.map(nm).join(", ")}</div>`:""}
+  ${R===rs[rs.length-1]?vNext(R):""}
+  ${R===rs[rs.length-1]?`<button class="btn big ghost" style="margin-top:14px" data-a="delr">Delete this round</button>`:""}`
+  :`<div class="card"><p>No rounds yet. Add players, mark who has arrived, then start round 1.</p><button class="btn pri big" data-a="next">Start round 1</button></div>`}`;
+}
+function vPlayers(){
+  const h=S.players.filter(p=>p.status==="here").length,l=S.players.filter(p=>p.status==="late").length;
+  return `<h1>Players</h1><br>
+  <div class="card"><input id="nm" placeholder="Player name" maxlength="24" autocomplete="off" enterkeyhint="done">
+    <div class="row"><button class="btn pri" data-a="add" data-v="here">Add as here</button><button class="btn" data-a="add" data-v="late">Add as not arrived</button></div></div>
+  <p class="mut">${h} here${l?", "+l+" not arrived yet":""}. Add people any time, even mid-session.</p>
+  ${S.players.map(p=>`<div class="card prow ${p.status}"><div class="pn"><b>${esc(p.name)}</b><span class="mut">${cnt(p.id)} played</span></div>
+    <div class="seg">${[["here","Here"],["late","Not yet"],["left","Left"]].map(([k,t])=>`<button class="${p.status===k?"on "+k:""}" data-a="st" data-id="${p.id}" data-v="${k}">${t}</button>`).join("")}</div>
+    ${cnt(p.id)?"":`<button class="x" data-a="rm" data-id="${p.id}" aria-label="Remove ${esc(p.name)}">✕</button>`}</div>`).join("")||'<p class="mut">Add the first player to get started.</p>'}`;
+}
+function vBoard(){
+  const st=stats(),pct=r=>r.w+r.l?r.w/(r.w+r.l):0;
+  const rows=S.players.map(p=>({p,...st[p.id]})).sort((a,b)=>b.w-a.w||b.d-a.d||(b.gf-b.ga)-(a.gf-a.ga)||pct(b)-pct(a)||a.p.name.localeCompare(b.p.name));
+  return `<h1>Leaderboard</h1><br>
+  ${rows.length?`<div class="card" style="overflow-x:auto"><table><tr><th>#</th><th>Player</th><th>W</th><th>D</th><th>L</th><th>Games +/−</th></tr>
+  ${rows.map((r,i)=>{const d=r.gf-r.ga,pl=r.w+r.d+r.l;return `<tr class="${i===0&&pl?"top":pl?"":"dim"}"><td>${i+1}</td><td>${esc(r.p.name)}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${d>0?"+":""}${d}</td></tr>`}).join("")}</table></div>
+  <p class="mut">Ranked by wins, then draws, then game difference. Doubles results count for each player on the team.</p>`:'<p class="mut">Add players and save a result to see rankings.</p>'}
+  ${rows.length?'<button class="btn pri big" data-a="share">Share as image</button>':""}
+  <button class="btn big ghost" data-a="reset">${armed?"Tap again to clear everything":"Start a new session"}</button>`;
+}
+function vNext(R){
+  const nr=R+1,live=S.matches.some(m=>m.r===R&&!m.done);
+  if(S.set.pair==="koth"&&live){const w=(S.rest[R]||[]).filter(i=>P(i)&&P(i).status==="here");
+    return `<div class="up"><b>Up next</b><p class="mut">King of the hill: winners stay on court. ${w.length?"Waiting to challenge: "+w.map(nm).join(", ")+".":""}</p></div>`}
+  if(S.set.pair!=="ams"||!S.draft||S.draft.R!==nr){const p=plan(nr);S.draft=p.err?{R:nr,err:p.err}:{R:nr,out:p.out,rest:p.rest}}
+  const d=S.draft;
+  if(d.err)return `<div class="up"><b>Up next</b><p class="mut">${esc(d.err)}</p></div>`;
+  return `<div class="up"><b>Up next: round ${nr}</b>
+  ${d.out.map((o,i)=>`<p>Court ${i+1}: ${o.t1.map(nm).join(" &amp; ")} vs ${o.t2.map(nm).join(" &amp; ")}</p>`).join("")}
+  ${d.rest.length?`<p class="mut">Rest: ${d.rest.map(nm).join(", ")}</p>`:""}
+  ${S.set.pair==="mex"&&live?'<p class="mut">Based on current standings. It may change after scores are saved.</p>':""}
+  ${S.set.pair==="ams"?'<button class="btn" data-a="reshuf">Reshuffle preview</button>':""}</div>`;
+}
+const TPL={
+ blue:{n:"Court blue",bg:["#1d4ed8","#172c6b"],card:"#ffffffe6",tx:"#14213d",ac:"#d6e64a",on:"#1b2a05",hd:"#ffffff",sub:"#c7d7ff"},
+ night:{n:"Night",bg:["#0b1220","#1a2a47"],card:"#ffffff14",tx:"#f1f5ff",ac:"#d6e64a",on:"#1b2a05",hd:"#ffffff",sub:"#93a5c4"},
+ ball:{n:"Ball",bg:["#d6e64a","#aac425"],card:"#ffffffcc",tx:"#1b2a05",ac:"#14213d",on:"#ffffff",hd:"#14213d",sub:"#3d4f12"},
+ photo:{n:"Photo frame",bg:["#1d4ed8","#0b1220"],card:"#0b1220cc",tx:"#ffffff",ac:"#d6e64a",on:"#1b2a05",hd:"#ffffff",sub:"#e3ecff"}
+};
+const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+function infoDate(){const v=S.info.date||ymd(new Date(S.date||Date.now())),a=v.split("-");return a.length===3&&MON[+a[1]-1]?(+a[2])+" "+MON[+a[1]-1]+" "+a[0]:""}
+function autoFmt(){const rs=rn(),l=rs[rs.length-1],m=S.matches.find(x=>x.r===l);return m?(m.t1.length>1?"Doubles":"Singles"):""}
+function detail(){const i=S.info,d=infoDate()+(i.time?", "+i.time:""),f=i.format===undefined?autoFmt():i.format;return [(i.place||"").trim(),d,(f||"").trim()].filter(Boolean).join(" | ")}
+const SIZES={port:["Portrait 1080×1350",1350],sq:["Square 1080×1080",1080],story:["Story 1080×1920",1920]};
+function drawShare(){
+  const t=TPL[SH.tpl],W=1080,H=SIZES[SH.size||"port"][1],cv=document.createElement("canvas");cv.width=W;cv.height=H;const x=cv.getContext("2d");
+  const F=(w,z)=>w+" "+Math.round(z)+"px 'Plus Jakarta Sans',system-ui,sans-serif",ph=SH.tpl==="photo",im=ph&&SH.img,tt=SH.titleOn!==false;
+  const g=x.createLinearGradient(0,0,W,H);g.addColorStop(0,t.bg[0]);g.addColorStop(1,t.bg[1]);x.fillStyle=g;x.fillRect(0,0,W,H);
+  if(im){const s=Math.max(W/im.width,H/im.height),w=im.width*s,h=im.height*s;x.drawImage(im,(W-w)/2,(H-h)/2,w,h);
+    const sh=x.createLinearGradient(0,0,0,H);sh.addColorStop(0,"#000a");sh.addColorStop(.3,"#0000");sh.addColorStop(.65,"#0000");sh.addColorStop(1,"#000b");x.fillStyle=sh;x.fillRect(0,0,W,H)}
+  if(!ph){x.strokeStyle=t.ac;x.lineWidth=10;x.strokeRect(30,30,W-60,H-60)}
+  const st=stats(),rows=S.players.map(p=>({p,...st[p.id]})).filter(r=>r.w+r.d+r.l>0).sort((a,b)=>b.w-a.w||b.d-a.d||(b.gf-b.ga)-(a.gf-a.ga)||a.p.name.localeCompare(b.p.name)).slice(0,ph?5:10),n=rows.length;
+  const rh=ph?68:Math.min(110,(H-330-120)/Math.max(n,1)),k=Math.min(1,rh/96),off=ph?0:Math.max(0,(H-1350)/2);
+  const ty=ph?110:160+off,dt=detail(),lines=(tt?1:0)+(dt?1:0);
+  const y0=ph?(SH.pos==="top"?(lines===2?240:lines===1?170:90):H-80-n*rh):(lines===2?290:lines===1?230:170)+off;
+  x.textAlign="center";let yy=ty;
+  if(tt){x.fillStyle=t.hd;x.font=F(800,ph?60:72);if(ph){x.shadowColor="#0008";x.shadowBlur=14}x.fillText(SH.title||"Tennis Session",W/2,ty);x.shadowBlur=0;yy=ty+(ph?56:58)}
+  if(dt){let fs=ph?30:34;x.font=F(600,fs);while(x.measureText(dt).width>W-140&&fs>18){fs-=2;x.font=F(600,fs)}
+    x.fillStyle=t.sub;if(ph){x.shadowColor="#0008";x.shadowBlur=10}x.fillText(dt,W/2,yy);x.shadowBlur=0}
+  const L=ph?110:80,dx=ph?140:120;
+  if(!n){x.fillStyle=t.hd;x.font=F(600,40);x.fillText("No results yet",W/2,ph?H/2:y0+80)}
+  else{x.fillStyle=t.sub;x.font=F(600,ph?22:26);x.fillText("W-D-L",ph?690:700,y0-16);x.textAlign="right";x.fillText("Games +/\u2212",W-dx,y0-16)}
+  rows.forEach((r,i)=>{
+    const y=y0+i*rh,top=i===0,gap=ph?8:14,cy=y+(rh-gap)/2;
+    x.fillStyle=top?t.ac:t.card;x.beginPath();if(x.roundRect)x.roundRect(L,y,W-2*L,rh-gap,ph?16:22);else x.rect(L,y,W-2*L,rh-gap);x.fill();
+    x.fillStyle=top?t.on:t.tx;x.textBaseline="middle";
+    x.textAlign="center";x.font=F(800,44*k);x.fillText(String(i+1),L+55,cy);
+    x.textAlign="left";x.font=F(700,42*k);let nm2=r.p.name;while(nm2.length>1&&x.measureText(nm2).width>400)nm2=nm2.slice(0,-1);x.fillText(nm2,L+120,cy);
+    x.textAlign="center";x.font=F(600,34*k);x.fillText(r.w+"-"+r.d+"-"+r.l,ph?690:700,cy);
+    const d=r.gf-r.ga;x.textAlign="right";x.font=F(800,40*k);x.fillText((d>0?"+":"")+d,W-dx,cy);
+  });
+  SH.cv=cv;const el=$("#shimg");if(el)el.src=cv.toDataURL("image/jpeg",.92);
+}
+function vShare(){
+  const opt=(k,l,cur)=>`<option value="${k}"${cur===k?" selected":""}>${l}</option>`;
+  return `<div class="ov" data-a="shclose"><div class="md" style="max-height:92vh;overflow-y:auto" role="dialog" aria-modal="true" aria-label="Share leaderboard">
+  <h3>Share leaderboard</h3>
+  <img id="shimg" alt="Leaderboard preview" style="width:100%;max-height:34vh;object-fit:contain;border-radius:10px;margin:10px 0;background:var(--bg)">
+  <div class="chips" style="padding-bottom:8px">${Object.entries(TPL).map(([k,t])=>`<button class="btn ${SH.tpl===k?"pri":""}" style="flex:0 0 auto" data-a="shtpl" data-v="${k}">${t.n}</button>`).join("")}</div>
+  <div class="set" style="margin-bottom:10px">
+    <label>Size <select data-sh="size">${Object.entries(SIZES).map(([k,v])=>opt(k,v[0],SH.size)).join("")}</select></label>
+    ${SH.tpl==="photo"?`<label>Scoreboard <select data-sh="pos">${opt("top","Top",SH.pos)}${opt("bottom","Bottom",SH.pos)}</select></label>`:""}
+    <label><input type="checkbox" data-sh="titleOn" ${SH.titleOn!==false?"checked":""} style="width:auto"> Show title</label>
+  </div>
+  <input id="shtt" value="${esc(SH.title)}" maxlength="30" aria-label="Title">
+  <input data-in="place" value="${esc(S.info.place||"")}" maxlength="30" placeholder="Place, e.g. Padel+" aria-label="Place" style="margin-top:8px">
+  <div class="row"><label class="mut" style="flex:1">Date<input type="date" data-in="date" value="${esc(S.info.date||ymd(new Date(S.date||Date.now())))}"></label><label class="mut" style="flex:1">Time (optional)<input type="time" data-in="time" value="${esc(S.info.time||"")}"></label></div>
+  <input data-in="format" value="${esc(S.info.format===undefined?autoFmt():S.info.format)}" maxlength="24" placeholder="Format, e.g. Doubles" aria-label="Format" style="margin-top:8px">
+  <p class="mut" style="margin:6px 0 0">The line under the title reads Place | Date | Format. Clear a box to leave it out.</p>
+  ${SH.tpl==="photo"?'<input id="shph" type="file" accept="image/*" style="margin-top:8px" aria-label="Choose a photo">':""}
+  <div class="row"><button class="btn" data-a="shclose">Close</button><button class="btn pri" data-a="shsave">Save JPG</button></div>
+  ${DL?"":'<p class="mut" style="margin:8px 0 0">Press and hold the image to save it.</p>'}
+  </div></div>`;
+}
+const lim=m=>m.cap||(m.T||S.set.target);
+function vModal(){
+  const m=S.matches.find(x=>x.id===ED.id);if(!m){ED=null;return ""}
+  const o=ED.side===1?2:1,v=+ED.val,max=lim(m);
+  return `<div class="ov" data-a="mclose"><div class="md" role="dialog" aria-modal="true" aria-label="Enter score">
+  <h3>${m["t"+ED.side].map(nm).join(" &amp; ")}</h3>
+  <span class="mut">${m.cap?"Total "+m.cap+" games, so the most is "+max:"First to "+max+", so the most is "+max}</span>
+  <div class="vr"><button data-a="mstep" data-v="-1" aria-label="Minus one">−</button><b>${v}</b><button data-a="mstep" data-v="1" aria-label="Plus one">+</button></div>
+  ${m.cap?`<p class="mut" style="text-align:center;margin:0 0 12px">${m["t"+o].map(nm).join(" &amp; ")} will be set to ${m.cap-v}</p>`:""}
+  <div class="pad">${[1,2,3,4,5,6,7,8,9].map(d=>`<button data-a="mkey" data-v="${d}">${d}</button>`).join("")}<button data-a="mkey" data-v="C" aria-label="Clear">C</button><button data-a="mkey" data-v="0">0</button><button data-a="mkey" data-v="B" aria-label="Backspace">⌫</button></div>
+  <div class="row"><button class="btn" data-a="mclose">Cancel</button><button class="btn pri" data-a="msave">Save score</button></div></div></div>`;
+}
+function render(){
+  const nv=$("#nm")?$("#nm").value:"";
+  $("#app").innerHTML=S.tab==="rounds"?vRounds():S.tab==="players"?vPlayers():vBoard();
+  $("#modal").innerHTML=ED?vModal():SH?vShare():LK?vLink():"";
+  if(SH&&!ED)drawShare();
+  if($("#nm")){$("#nm").value=nv;if(foc){$("#nm").focus();foc=false}}
+  $("#nav").innerHTML=[["rounds","Rounds"],["players","Players"],["board","Leaderboard"]].map(([k,t])=>`<button class="${S.tab===k?"on":""}" data-a="tab" data-v="${k}">${t}</button>`).join("");
+  save();
+}
+function addPlayer(v){
+  const el=$("#nm"),n=(el.value||"").trim();
+  if(!n)return toast("Type a name first.");
+  if(S.players.some(p=>p.name.toLowerCase()===n.toLowerCase()))return toast(n+" is already added.");
+  S.players.push({id:nid(),name:n,status:v});S.draft=null;el.value="";foc=true;render();
+}
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-a]");if(!b)return;
+  const a=b.dataset.a,v=b.dataset.v,id=b.dataset.id,M=()=>S.matches.find(x=>x.id===id);
+  if(a!=="reset")armed=false;
+  if(a==="tab"){S.tab=v;window.scrollTo(0,0)}
+  else if(a==="gear"){S.tab="rounds";S.gear=!S.gear}
+  else if(a==="add")return addPlayer(v);
+  else if(a==="st"){P(id).status=v;S.draft=null}
+  else if(a==="rm"){S.players=S.players.filter(p=>p.id!==id);S.draft=null}
+  else if(a==="courts"){S.set.courts=Math.min(4,Math.max(1,S.set.courts+ +v));S.draft=null}
+  else if(a==="next"){newRound()}
+  else if(a==="round"){S.cur=+v}
+  else if(a==="reshuf"){S.draft=null}
+  else if(a==="live"){if(!live){const al="abcdefghjkmnpqrstuvwxyz23456789";let c="";for(let i=0;i<8;i++)c+=al[Math.floor(Math.random()*al.length)];goLive(c)}LK=true}
+  else if(a==="lkclose"){if(b.classList.contains("ov")&&e.target!==b)return;LK=false}
+  else if(a==="lkcopy"){const u=location.href;(navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>toast("Link copied")).catch(()=>{const i=$("#lkurl");if(i){i.select();toast("Select and copy the link")}});return}
+  else if(a==="share"){SH={tpl:"blue",title:"Tennis Session",img:null,cv:null,size:"port",pos:"bottom",titleOn:true}}
+  else if(a==="shtpl"){SH.tpl=v}
+  else if(a==="shclose"){if(b.classList.contains("ov")&&e.target!==b)return;SH=null}
+  else if(a==="shsave"){SH.cv.toBlob(async bl=>{try{if(DL)await DL.save({filename:"tennis-leaderboard.jpg",data:bl});else{const u=URL.createObjectURL(bl),el=document.createElement("a");el.href=u;el.download="tennis-leaderboard.jpg";document.body.appendChild(el);el.click();el.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)}toast("Saved")}catch(er){if(!er||er.code!=="declined")toast("Could not save. Press and hold the image instead.")}},"image/jpeg",.92);return}
+  else if(a==="ed"){const m=M();ED={id,side:+v,val:String(m["s"+v])}}
+  else if(a==="mclose"){if(b.classList.contains("ov")&&e.target!==b)return;ED=null}
+  else if(a==="mstep"){const m=S.matches.find(x=>x.id===ED.id);ED.val=String(Math.min(lim(m),Math.max(0,+ED.val+ +v)))}
+  else if(a==="mkey"){const m=S.matches.find(x=>x.id===ED.id);let s=ED.val;if(v==="C")s="0";else if(v==="B")s=s.length>1?s.slice(0,-1):"0";else s=(s==="0"?"":s)+v;ED.val=String(Math.min(lim(m),+s))}
+  else if(a==="msave"){const m=S.matches.find(x=>x.id===ED.id),s=ED.side,o=s===1?2:1,val=+ED.val,L=lim(m);m["s"+s]=val;
+    if(m.cap)m["s"+o]=m.cap-val;else{m["s"+o]=Math.min(m["s"+o],L);if(val>=L&&m["s"+o]>=L)m["s"+o]=L-1}ED=null}
+  else if(a==="fin"){const m=M();if(m.cap?m.s1+m.s2===0:m.s1===m.s2)return toast(m.cap?"Tap a score box to enter the score first.":"Scores are tied. Keep playing or adjust the score.");m.done=true}
+  else if(a==="edit"){M().done=false}
+  else if(a==="delr"){const R=S.cur;S.matches=S.matches.filter(m=>m.r!==R);delete S.rest[R];S.cur=0;S.draft=null}
+  else if(a==="reset"){if(!armed){armed=true;return render()}S.matches=[];S.players=[];S.rest={};S.draft=null;S.info={place:S.info.place||""};if(live){live=false;if(es)es.close();CODE="";history.replaceState(null,"",location.pathname+location.search);setLive()}S.cur=0;S.date=0;S.tab="players";armed=false}
+  render();
+});
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="nm")addPlayer("here")});
+document.addEventListener("input",e=>{if(!SH)return;if(e.target.id==="shtt"){SH.title=e.target.value;drawShare()}else if(e.target.dataset.in){S.info[e.target.dataset.in]=e.target.value;save();drawShare()}});
+document.addEventListener("change",e=>{
+  if(e.target.dataset.sh&&SH){const el=e.target;SH[el.dataset.sh]=el.type==="checkbox"?el.checked:el.value;drawShare();return}
+  if(e.target.id==="shph"){const f=e.target.files[0];if(!f||!SH)return;const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{SH.img=im;drawShare()};im.src=fr.result};fr.readAsDataURL(f);return}
+  const s=e.target.dataset.s;if(!s)return;S.set[s]=["target","total"].includes(s)?+e.target.value:e.target.value;S.draft=null;save();if(s==="mode")render()});
+function node(){return DB_URL.replace(/\/$/,"")+"/matches/"+CODE+".json"}
+function setLive(st){const b=$("#livebtn");if(!b)return;b.hidden=!DB_URL;b.textContent=!live?"Go live":st==="err"?"Offline":"● Live"}
+function push(){if(!live||applying)return;clearTimeout(pt);
+  pt=setTimeout(()=>{const o={};SHARED.forEach(k=>o[k]=S[k]);
+    fetch(node(),{method:"PUT",body:JSON.stringify({s:JSON.stringify(o),c:CID,t:Date.now()})}).then(r=>{if(!r.ok)throw 0;setLive("ok")}).catch(()=>setLive("err"))},200)}
+function apply(d){
+  try{const o=JSON.parse(d.s);SHARED.forEach(k=>{if(o[k]!==undefined)S[k]=o[k]});
+    S.set=Object.assign({...DEF},S.set);S.rest=S.rest||{};S.info=S.info||{};S.draft=null;
+    const ae=document.activeElement;if(SH||ED||(ae&&ae.tagName==="INPUT"))return;
+    applying=true;render();applying=false}catch(e){applying=false}
+}
+function pull(){fetch(node()).then(r=>r.json()).then(d=>{if(d&&d.s){if(d.c!==CID)apply(d);setLive("ok")}else push()}).catch(()=>setLive("err"))}
+function goLive(c){CODE=c;live=true;history.replaceState(null,"",location.pathname+location.search+"#"+CODE);setLive("ok");
+  es=new EventSource(node());["put","patch"].forEach(ev=>es.addEventListener(ev,()=>{clearTimeout(pullT);pullT=setTimeout(pull,120)}));
+  es.onerror=()=>setLive("err");pull()}
+document.addEventListener("visibilitychange",()=>{if(live&&!document.hidden)pull()});
+function vLink(){return `<div class="ov" data-a="lkclose"><div class="md" role="dialog" aria-modal="true" aria-label="Live link"><h3>Live match link</h3>
+  <p class="mut">Anyone with this link can watch live and enter scores. Send it to your friends.</p>
+  <input id="lkurl" readonly value="${esc(location.href)}">
+  <div class="row"><button class="btn" data-a="lkclose">Close</button><button class="btn pri" data-a="lkcopy">Copy link</button></div></div></div>`}
+render();setLive();if(DB_URL&&CODE)goLive(CODE);
+try{claude.use("downloads").then(d=>{DL=d;if(SH)render()}).catch(()=>{})}catch(e){}
+</script>
+</body>
+</html>
