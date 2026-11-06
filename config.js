@@ -15,4 +15,4 @@ window.DB_URL="https://tennis-match-10a29-default-rtdb.asia-southeast1.firebased
  * Anyone). If you already set this up earlier, keep your existing
  * value — don't overwrite it with the placeholder below.
  */
-window.AVAIL_URL = "https://script.google.com/macros/s/AKfycbzQXD517ugnj0_sRRAlJaIrPG5zuyVa0F5SfjLe6Gwl8MHZvbv6CdMjCD9ib9B41ORe/exec";
+window.AVAIL_URL = "https://script.google.com/macros/s/AKfycbx5Ps0ibKBtOg_TJ5loXPdScPAEE-dqmSK1L-OP7n9wO_sLmRJRha0ZXvEo_RzjsRJE8g/exec";
