@@ -78,6 +78,14 @@ tr.top td{background:var(--ball);color:#1d2a05;font-weight:700}tr.dim td{color:v
 #nav button.on{color:var(--tx);box-shadow:inset 0 3px 0 var(--ac)}
 #toast{position:fixed;left:50%;bottom:calc(80px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:15px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90%;text-align:center}
 #toast.on{opacity:1}
+.venue{padding:12px}.venue .vh{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.venue .vh b{font-size:16px}.venue .vh span{color:var(--mut);font-size:13px;white-space:nowrap}
+.hrs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.hr{background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:4px 8px;font-size:13px;font-weight:600}
+.hr i{font-style:normal;color:var(--ok);margin-left:4px}
+.warn{border-color:var(--warn);color:var(--warn)}
+.hm{display:flex;align-items:center;gap:14px;width:100%;text-align:left;padding:18px;font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appearance:none}
+.hm b{font-size:18px}.hi{font-size:34px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 html{-webkit-text-size-adjust:100%;touch-action:manipulation}
 html,body{max-width:100%;overflow-x:hidden}
@@ -99,7 +107,7 @@ input[type=date],input[type=time]{-webkit-appearance:none;appearance:none;min-he
 <script src="config.js"></script>
 </head>
 <body>
-<header class="hd"><span aria-hidden="true">🎾</span><b>Tennis Session</b><button id="livebtn" data-a="live" hidden style="font-size:15px;font-weight:700;border:1px solid #fff9;border-radius:16px;padding:0 12px;min-height:34px">Go live</button><button data-a="gear" aria-label="Settings">⚙</button></header>
+<header class="hd"><button data-a="home" id="homebtn" aria-label="Back to home" hidden>‹</button><span id="ico" aria-hidden="true">🎾</span><b id="ttl">Tennis</b><button id="livebtn" data-a="live" hidden style="font-size:15px;font-weight:700;border:1px solid #fff9;border-radius:16px;padding:0 12px;min-height:34px">Go live</button><button data-a="gear" aria-label="Settings">⚙</button></header>
 <main id="app"></main>
 <nav id="nav"></nav>
 <div id="modal"></div><div id="toast" role="status"></div>
@@ -113,20 +121,25 @@ const KEY="tennis-session-v1"+(CODE?"-"+CODE:""),DEF={courts:1,format:"auto",tar
 let S={players:[],matches:[],rest:{},set:{...DEF},tab:"rounds",cur:0,gear:false,date:0};
 try{const r=localStorage.getItem(KEY);if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
 S.set=Object.assign({...DEF},S.set);S.rest=S.rest||{};S.info=S.info||{};if(S.tab==="matches")S.tab="rounds";
+S.av=Object.assign({date:new Date().toLocaleDateString("sv-SE"),from:6,to:24,sort:"slots",data:null,err:""},S.av);S.av.loading=false;
+S.page=CODE?"score":"home";
+S.hist=Object.assign({data:null,err:"",sort:"tot"},S.hist);S.hist.loading=false;S.hdel=null;
+S.ended=S.ended||0;
 S.matches.forEach((m,i)=>{if(!m.r){m.r=i+1;m.court=1}});
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}push()};
-let uid=Date.now(),armed=false,foc=false,tt,ED=null,SH=null,DL=null,LK=false,SV=null;
+let uid=Date.now(),armed=false,armedEnd=false,foc=false,tt,ED=null,SH=null,DL=null,LK=false,SV=null,JN=false;
 const nid=()=>String(uid++),$=s=>document.querySelector(s),P=id=>S.players.find(p=>p.id===id);
+const genCode=n=>{const al="abcdefghjkmnpqrstuvwxyz23456789";let c="";for(let i=0;i<n;i++)c+=al[Math.floor(Math.random()*al.length)];return c};
+const matchId=()=>CODE||(S.mid=S.mid||genCode(5));
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const nm=i=>esc(P(i)?P(i).name:"?"),pad=n=>String(n).padStart(2,"0");
 const cnt=id=>S.matches.filter(x=>x.t1.includes(id)||x.t2.includes(id)).length;
 const rn=()=>[...new Set(S.matches.map(m=>m.r))].sort((a,b)=>a-b);
 const PAIR={ams:"Americano",mex:"Mexicano",koth:"King of the hill"};
 function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("on");clearTimeout(tt);tt=setTimeout(()=>t.classList.remove("on"),2200)}
-function stats(){
+function statsFor(dn){
   const m={};S.players.forEach(p=>m[p.id]={w:0,d:0,l:0,gf:0,ga:0,n:0,mc:0,tot:0});
   const add=(o,f,a,r)=>{if(!o)return;o.gf+=f;o.ga+=a;o.n++;r>0?o.w++:r<0?o.l++:o.d++};
-  const dn=S.matches.filter(x=>x.done);
   dn.forEach(x=>{const r=Math.sign(x.s1-x.s2);
     x.t1.forEach(i=>add(m[i],x.s1,x.s2,r));x.t2.forEach(i=>add(m[i],x.s2,x.s1,-r))});
   /* Americano points: each player gets the points their team scored. Missed matches (vs the most-played player) are compensated with half a match's points each. */
@@ -134,6 +147,8 @@ function stats(){
   vs.forEach(o=>{o.mc=o.n?Math.round((mx-o.n)*avg):0;o.tot=o.gf+o.mc});
   return m;
 }
+function stats(){return statsFor(S.matches.filter(x=>x.done))}
+function statsFmt(isDouble){return statsFor(S.matches.filter(x=>x.done&&(x.t1.length>1)===isDouble))}
 const rankCmp=(a,b)=>b.tot-a.tot||(b.gf-b.ga)-(a.gf-a.ga)||b.w-a.w||a.p.name.localeCompare(b.p.name);
 function plan(R){
   
@@ -186,6 +201,23 @@ function newRound(){
   if(!S.date)S.date=Date.now();
   S.cur=R;S.tab="rounds";
 }
+function vEventCard(){
+  return `<div class="card">
+    <label class="mut" style="display:block">Event name<input data-ev="name" maxlength="30" placeholder="Tennis Session" value="${esc(S.info.name||"")}" style="margin-top:4px"></label>
+    <div class="row">
+      <label class="mut" style="flex:1">Place<input data-ev="place" maxlength="30" placeholder="e.g. Padel+" value="${esc(S.info.place||"")}" style="margin-top:4px"></label>
+      <label class="mut" style="flex:1">Date<input type="date" data-ev="date" value="${esc(S.info.date||ymd(new Date(S.date||Date.now())))}" style="margin-top:4px"></label>
+    </div>
+    <p class="mut" style="margin:10px 0 0">Match ID: <b>${esc(matchId())}</b> — shown on the scoreboard, and saved with shares and history.</p>
+  </div>`;
+}
+function evBar(){
+  const bits=[S.info.place,infoDate()].filter(Boolean),mid=matchId();
+  return `<div class="card" style="padding:12px 14px;margin-bottom:14px">
+    <div class="sec" style="margin:0"><b style="font-size:18px">${esc(S.info.name||"Tennis Session")}</b><button class="x" data-a="gear" aria-label="Edit event details">✎</button></div>
+    <p class="mut" style="margin:4px 0 0">${bits.length?esc(bits.join(" · ")):"No place or date set yet."} · #${esc(mid)}</p>
+  </div>`;
+}
 function vSettings(){
   const T=S.set.target;
   return `<div class="card set">
@@ -208,16 +240,19 @@ function vRounds(){
   const here=S.players.filter(p=>p.status==="here").length,c=S.set.courts;
   const date=new Date(S.date||Date.now()).toLocaleString([],{month:"2-digit",day:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
   const rest=(S.rest[R]||[]).filter(i=>P(i));
-  return `<h1>Match Rounds</h1>
+  const last=R===rs[rs.length-1];
+  return `${evBar()}<h1>Match Rounds</h1>
   <div class="info"><div>${PAIR[S.set.pair]}</div><div class="rt">${date}</div><div>${S.set.mode==="total"?"Total "+S.set.total+" games, ties allowed":"First to "+S.set.target}</div><div class="rt">${here} players, ${c} court${c>1?"s":""}</div></div>
-  ${S.gear?vSettings():""}
+  ${S.gear?vEventCard()+vSettings():""}
+  ${S.ended?`<div class="card warn"><b>Match ended</b><p class="mut" style="margin:4px 0 10px">Ended ${new Date(S.ended).toLocaleString([],{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})}. Scores are locked for new rounds, but you can still fix a saved score below.</p><button class="btn" data-a="resume">Resume match</button></div>`:""}
   ${rs.length?`<div class="chips">${rs.map(r=>`<button class="chip ${r===R?"on":""}" data-a="round" data-v="${r}" aria-label="Round ${r}">${r}${S.matches.filter(m=>m.r===r).every(m=>m.done)?"<i>✓</i>":""}</button>`).join("")}</div>
-  <div class="sec"><h2>Round #${R}</h2><button class="btn" style="flex:0 0 auto" data-a="next">Next round</button></div>
+  <div class="sec"><h2>Round #${R}</h2>${S.ended?"":'<button class="btn" style="flex:0 0 auto" data-a="next">Next round</button>'}</div>
   ${ms.some(m=>!m.done)?'<p class="mut" style="margin:6px 0 0">Tap a score box to enter the score.</p>':""}
   ${ms.map(card).join("")}
   ${rest.length?`<div class="rest"><b>Rest players:</b> ${rest.map(nm).join(", ")}</div>`:""}
-  ${R===rs[rs.length-1]?vNext(R):""}
-  ${R===rs[rs.length-1]?`<button class="btn big ghost" style="margin-top:14px" data-a="delr">Delete this round</button>`:""}`
+  ${last&&!S.ended?vNext(R):""}
+  ${last?`<button class="btn big ghost" style="margin-top:14px" data-a="delr">Delete this round</button>`:""}
+  ${last&&!S.ended?`<button class="btn big" style="margin-top:8px" data-a="endgame">${armedEnd?"Tap again to end the match":"End match"}</button>`:""}`
   :`<div class="card"><p>No rounds yet. Add players, mark who has arrived, then start round 1.</p><button class="btn pri big" data-a="next">Start round 1</button></div>`}`;
 }
 function vPlayers(){
@@ -230,15 +265,162 @@ function vPlayers(){
     ${cnt(p.id)?"":`<button class="x" data-a="rm" data-id="${p.id}" aria-label="Remove ${esc(p.name)}">✕</button>`}<div class="seg">${[["here","Here"],["late","Not yet"],["left","Left"]].map(([k,t])=>`<button class="${p.status===k?"on "+k:""}" data-a="st" data-id="${p.id}" data-v="${k}">${t}</button>`).join("")}</div>
     </div>`).join("")||'<p class="mut">Add the first player to get started.</p>'}`;
 }
+function boardTable(rows){
+  return `<div class="card" style="overflow-x:auto"><table><tr><th>#</th><th>Player</th><th>G</th><th>W-D-L</th><th>Diff</th><th>+M</th><th>P</th></tr>
+  ${rows.map((r,i)=>{const d=r.gf-r.ga;return `<tr class="${i===0&&r.n?"top":r.n?"":"dim"}"><td>${i+1}</td><td>${esc(r.p.name)}</td><td>${r.n}</td><td>${r.w}-${r.d}-${r.l}</td><td>${d>0?"+":""}${d}</td><td>${r.mc}</td><td><b>${r.tot}</b></td></tr>`}).join("")}</table></div>`;
+}
 function vBoard(){
-  const st=stats();
-  const rows=S.players.map(p=>({p,...st[p.id]})).sort(rankCmp);
-  return `<h1>Leaderboard</h1><br>
-  ${rows.length?`<div class="card" style="overflow-x:auto"><table><tr><th>#</th><th>Player</th><th>G</th><th>W-D-L</th><th>Diff</th><th>+M</th><th>P</th></tr>
-  ${rows.map((r,i)=>{const d=r.gf-r.ga;return `<tr class="${i===0&&r.n?"top":r.n?"":"dim"}"><td>${i+1}</td><td>${esc(r.p.name)}</td><td>${r.n}</td><td>${r.w}-${r.d}-${r.l}</td><td>${d>0?"+":""}${d}</td><td>${r.mc}</td><td><b>${r.tot}</b></td></tr>`}).join("")}</table></div>
-  <p class="mut"><b>P</b> = points scored + <b>+M</b>. Each player gets the points their team scored. <b>+M</b> compensates missed matches (compared with the player with the most matches) at half a match of points each. <b>G</b> = games played, <b>Diff</b> = points scored − conceded. Ties are broken by Diff, then wins.</p>`:'<p class="mut">Add players and save a result to see rankings.</p>'}
-  ${rows.length?'<button class="btn pri big" data-a="share">Share as image</button>':""}
-  <button class="btn big ghost" data-a="reset">${armed?"Tap again to clear everything":"Start a new session"}</button>`;
+  const all=stats(),allRows=S.players.map(p=>({p,...all[p.id]})).sort(rankCmp),any=allRows.some(r=>r.n>0);
+  const hasS=S.matches.some(x=>x.done&&x.t1.length===1),hasD=S.matches.some(x=>x.done&&x.t1.length>1);
+  const mkRows=st=>S.players.map(p=>({p,...st[p.id]})).filter(r=>r.n>0).sort(rankCmp);
+  let body;
+  if(!any)body='<p class="mut">Add players and save a result to see rankings.</p>';
+  else if(hasS&&hasD)body=`<h2 style="font-size:20px;margin:0 0 8px">Singles</h2>${boardTable(mkRows(statsFmt(false)))}
+  <h2 style="font-size:20px;margin:18px 0 8px">Doubles</h2>${boardTable(mkRows(statsFmt(true)))}
+  <p class="mut">Ranked by points, then point difference, then wins. Singles and doubles are scored and ranked separately.</p>`;
+  else body=`${hasD?'<h2 style="font-size:20px;margin:0 0 8px">Doubles</h2>':hasS?'<h2 style="font-size:20px;margin:0 0 8px">Singles</h2>':""}${boardTable(allRows)}
+  <p class="mut"><b>P</b> = points scored + <b>+M</b> (compensation for missed matches). <b>G</b> = games played, <b>Diff</b> = points scored − conceded. Ties are broken by Diff, then wins.</p>`;
+  return `${evBar()}<h1>Leaderboard</h1><br>
+  ${body}
+  ${any?'<button class="btn pri big" data-a="share">Share as image</button>':""}
+  ${DB_URL&&S.matches.some(m=>m.done)?`<button class="btn big" data-a="hsave">${S.savedId==="s"+S.date?"Saved ✓ Tap to update history":"Save session to history"}</button>`:""}
+  <button class="btn big ghost" data-a="reset">${armed?(DB_URL&&S.matches.some(m=>m.done)&&S.savedId!=="s"+S.date?"Not saved to history. Tap again to clear anyway":"Tap again to clear everything"):"Start a new session"}</button>`;
+}
+function homePreview(){
+  if(!DB_URL)return"";
+  const h=S.hist;
+  if(h.loading&&!h.data)return'<div class="card"><p class="mut" style="margin:0">Loading all-time leaderboard...</p></div>';
+  if(!h.data)return"";
+  const rows=histRows().sort((a,b)=>b.tot-a.tot||a.name.localeCompare(b.name)).slice(0,3);
+  if(!rows.length)return"";
+  return `<div class="card"><div class="sec" style="margin:0 0 8px"><b style="font-size:16px">All-time leaders</b><button class="btn" style="flex:0 0 auto" data-a="go" data-v="history">See more</button></div>
+  ${rows.map((r,i)=>`<div class="row" style="margin-top:${i?6:0};justify-content:space-between"><span>${i+1}. ${esc(r.name)}</span><b>${r.tot} pts</b></div>`).join("")}</div>`;
+}
+function vHome(){
+  const rs=rn().length,pl=S.players.length,hasData=pl>0||rs>0,mid=S.mid||CODE;
+  const scoreSection=!DB_URL
+    ?`<button class="card hm" data-a="go" data-v="score"><span class="hi" aria-hidden="true">🎾</span><span><b>Scoring</b><br><span class="mut">${hasData?pl+" player"+(pl===1?"":"s")+", "+rs+" round"+(rs===1?"":"s")+" so far":"Americano rounds, players and leaderboard"}</span></span></button>`
+    :`${hasData?`<button class="card hm" data-a="go" data-v="score"><span class="hi" aria-hidden="true">🎾</span><span><b>Continue match</b><br><span class="mut">${pl} player${pl===1?"":"s"}, ${rs} round${rs===1?"":"s"} so far${mid?" · #"+esc(mid):""}</span></span></button>`:""}
+    <div class="card" style="padding:16px">
+      <b style="font-size:16px">${hasData?"Start another match":"Scoring"}</b>
+      <p class="mut" style="margin:6px 0 10px">Create a new match to get a shareable ID, or join one a friend already started.</p>
+      <div class="row" style="margin-top:0"><button class="btn pri" data-a="create">+ Create match</button><button class="btn" data-a="joinbtn">Join match</button></div>
+    </div>`;
+  return `<h1>What's next?</h1><p class="mut" style="margin:4px 0 16px">Choose where to go.</p>
+  ${scoreSection}
+  <button class="card hm" data-a="go" data-v="courts"><span class="hi" aria-hidden="true">📅</span><span><b>Court availability</b><br><span class="mut">Pick a date, see free courts in Bandung</span></span></button>
+  <button class="card hm" data-a="go" data-v="history"><span class="hi" aria-hidden="true">🏆</span><span><b>All-time leaderboard</b><br><span class="mut">Saved sessions from everyone</span></span></button>
+  ${homePreview()}`;
+}
+function vJoin(){return `<div class="ov" data-a="jnclose"><div class="md" role="dialog" aria-modal="true" aria-label="Join match"><h3>Join a match</h3>
+  <p class="mut">Ask your friend for the match ID from their Live match link, then enter it below.</p>
+  <input id="jnid" placeholder="e.g. a3x9k2mp" maxlength="12" autocomplete="off" autocapitalize="off" enterkeyhint="go">
+  <div class="row"><button class="btn" data-a="jnclose">Cancel</button><button class="btn pri" data-a="jngo">Join</button></div></div></div>`}
+function createMatch(){location.href=location.pathname+location.search+"#"+genCode(8);location.reload()}
+function joinMatch(c){location.href=location.pathname+location.search+"#"+c;location.reload()}
+const hbase=()=>DB_URL.replace(/\/$/,"")+"/history";
+async function loadHistory(){
+  const h=S.hist;
+  if(!DB_URL){h.err="Live sync is not set up (DB_URL is missing in config.js).";return render()}
+  h.loading=true;h.err="";render();
+  try{const r=await fetch(hbase()+".json");if(!r.ok)throw new Error("Could not load history.");h.data=(await r.json())||{}}
+  catch(e){h.err=e.message||"Could not load history."}
+  h.loading=false;render();
+}
+async function saveHistory(){
+  if(!DB_URL)return toast("Live sync is not set up.");
+  if(!S.date||!S.matches.some(m=>m.done))return toast("Save at least one result first.");
+  const stA=stats(),stS=statsFmt(false),stD=statsFmt(true),id="s"+S.date;
+  const players=S.players.filter(p=>stA[p.id].n>0).map(p=>{
+    const o=stA[p.id],s=stS[p.id],d=stD[p.id];
+    return {name:p.name,n:o.n,w:o.w,d:o.d,l:o.l,gf:o.gf,ga:o.ga,mc:o.mc,tot:o.tot,
+      sn:s.n,sw:s.w,sd:s.d,sl:s.l,stot:s.tot,dn:d.n,dw:d.w,dd:d.d,dl:d.l,dtot:d.tot};
+  });
+  const rec={id,t:Date.now(),date:S.date,name:S.info.name||"",place:S.info.place||"",mid:matchId(),matches:S.matches.filter(m=>m.done).length,players};
+  try{const r=await fetch(hbase()+"/"+id+".json",{method:"PUT",body:JSON.stringify(rec)});if(!r.ok)throw 0;
+    S.savedId=id;if(S.hist.data)S.hist.data[id]=rec;toast("Saved to all-time history");render()}
+  catch(e){toast("Could not save. Check your connection.")}
+}
+function histRows(){
+  const h=S.hist;if(!h.data)return[];
+  const m={};
+  Object.values(h.data).filter(s=>s&&s.players).forEach(s=>s.players.forEach(p=>{
+    const k=String(p.name).trim().toLowerCase(),o=m[k]||(m[k]={name:p.name,s:0,n:0,w:0,d:0,l:0,gf:0,ga:0,mc:0,tot:0,sn:0,sw:0,sd:0,sl:0,stot:0,dn:0,dw:0,dd:0,dl:0,dtot:0});
+    if(!o.s)o.name=p.name;o.s++;
+    ["n","w","d","l","gf","ga","mc","tot","sn","sw","sd","sl","stot","dn","dw","dd","dl","dtot"].forEach(f=>o[f]+=p[f]||0);
+  }));
+  return Object.values(m);
+}
+function fmtTable(list,pfx){
+  return `<div class="card" style="overflow-x:auto"><table><tr><th>#</th><th>Player</th><th>G</th><th>W-D-L</th><th>P</th></tr>
+  ${list.map((o,i)=>`<tr class="${i===0?"top":""}"><td>${i+1}</td><td>${esc(o.name)}</td><td>${o[pfx+"n"]}</td><td>${o[pfx+"w"]}-${o[pfx+"d"]}-${o[pfx+"l"]}</td><td><b>${o[pfx+"tot"]}</b></td></tr>`).join("")}</table></div>`;
+}
+function vHistory(){
+  const h=S.hist,fmt=d=>new Date(d).toLocaleDateString([],{day:"numeric",month:"short",year:"numeric"});
+  let body="";
+  if(h.loading)body='<div class="card"><b>Loading history...</b></div>';
+  else if(h.err)body=`<div class="card warn"><b>${esc(h.err)}</b></div>`;
+  else if(h.data){
+    const ss=Object.values(h.data).filter(s=>s&&s.players).sort((a,b)=>b.date-a.date);
+    const rows0=histRows();
+    const key=o=>h.sort==="avg"?(o.n>=3?o.gf/o.n:-1):h.sort==="win"?(o.n>=3?o.w/o.n:-1):o.tot;
+    const rows=rows0.slice().sort((a,b)=>key(b)-key(a)||b.tot-a.tot||a.name.localeCompare(b.name));
+    const sRows=rows0.filter(o=>o.sn>0).sort((a,b)=>b.stot-a.stot||a.name.localeCompare(b.name));
+    const dRows=rows0.filter(o=>o.dn>0).sort((a,b)=>b.dtot-a.dtot||a.name.localeCompare(b.name));
+    body=rows0.length?`<h2 style="font-size:20px;margin:0 0 8px">Combined</h2>
+    <div class="card" style="overflow-x:auto"><table><tr><th>#</th><th>Player</th><th>S</th><th>G</th><th>W-D-L</th><th>Win%</th><th>Avg</th><th>P</th></tr>
+    ${rows.map((o,i)=>`<tr class="${i===0?"top":o.n<3&&h.sort!=="tot"?"dim":""}"><td>${i+1}</td><td>${esc(o.name)}</td><td>${o.s}</td><td>${o.n}</td><td>${o.w}-${o.d}-${o.l}</td><td>${o.n?Math.round(o.w/o.n*100):0}%</td><td>${o.n?(o.gf/o.n).toFixed(1):"0.0"}</td><td><b>${o.tot}</b></td></tr>`).join("")}</table></div>
+    <p class="mut"><b>S</b> sessions, <b>G</b> games, <b>Avg</b> points scored per game, <b>P</b> total points including missed-game compensation. Combined across singles and doubles. Avg and Win% sorting only ranks players with at least 3 games first.</p>
+    ${sRows.length?`<h2 style="font-size:20px;margin:18px 0 8px">Singles only</h2>${fmtTable(sRows,"s")}`:""}
+    ${dRows.length?`<h2 style="font-size:20px;margin:18px 0 8px">Doubles only</h2>${fmtTable(dRows,"d")}`:""}
+    <h2 style="margin:18px 0 8px;font-size:20px">Saved sessions</h2>
+    ${ss.map(s=>`<div class="card prow"><div class="pn"><b>${esc(s.name||"Tennis Session")}</b><span class="mut">${fmt(s.date)}${s.place?" · "+esc(s.place):""}${s.mid?" · #"+esc(s.mid):""} · ${s.players.length} players, ${s.matches} matches</span></div><button class="btn" style="flex:0 0 auto" data-a="hdel" data-id="${esc(s.id)}">${S.hdel===s.id?"Tap to delete":"Delete"}</button></div>`).join("")}`
+    :'<div class="card"><p>No sessions saved yet. After playing, open Scoring, then Leaderboard, then tap Save session to history.</p></div>';
+  }
+  return `<h1>All-time</h1><br>
+  <div class="card"><div class="set"><label>Rank combined by <select data-hs="sort"><option value="tot"${h.sort==="tot"?" selected":""}>Total points</option><option value="avg"${h.sort==="avg"?" selected":""}>Points per game</option><option value="win"${h.sort==="win"?" selected":""}>Win rate</option></select></label></div>
+  <button class="btn big" data-a="hload"${h.loading?" disabled":""}>Refresh</button></div>
+  ${body}`;
+}
+async function checkCourts(){
+  const a=S.av,u=window.AVAIL_URL;
+  if(!u)return toast("Add AVAIL_URL to config.js first.");
+  if(!a.date)return toast("Pick a date first.");
+  a.loading=true;a.err="";render();
+  const c=new AbortController(),t=setTimeout(()=>c.abort(),150000);
+  try{const r=await fetch(u+(u.includes("?")?"&":"?")+"date="+encodeURIComponent(a.date),{signal:c.signal}),d=await r.json();
+    if(d.error)throw new Error(d.error);a.data=d}
+  catch(e){a.err=e.name==="AbortError"?"Timed out. Try again.":(e.message||"Could not load courts.")}
+  clearTimeout(t);a.loading=false;render();
+}
+function vCourts(){
+  const a=S.av,d=a.data,hr=h=>pad(h)+".00",price=p=>p>0?Math.round(p/1000)+"k":"";
+  const opts=(from,to,cur)=>{let o="";for(let h=from;h<=to;h++)o+=`<option value="${h}"${cur===h?" selected":""}>${hr(h)}</option>`;return o};
+  let body="";
+  if(a.loading)body=`<div class="card"><b>Checking courts...</b><p class="mut" style="margin:6px 0 0">Fetching live from AYO, usually a few seconds.</p></div>`;
+  else if(a.err)body=`<div class="card warn"><b>${esc(a.err)}</b></div>`;
+  else if(d){
+    const times=d.times||[],vs=[];
+    (d.venues||[]).forEach(v=>{
+      const sl=times.map((t,i)=>({h:+t.slice(0,2),c:v.s[i]})).filter(x=>x.c!==null&&x.c!==0&&x.h>=a.from&&x.h<a.to);
+      if(sl.length)vs.push({n:v.n,sl,min:Math.min(...sl.map(x=>x.c>0?x.c:1e9))});
+    });
+    vs.sort(a.sort==="price"?(x,y)=>x.min-y.min:a.sort==="name"?(x,y)=>x.n.localeCompare(y.n):(x,y)=>y.sl.length-x.sl.length||x.min-y.min);
+    const stale=d.iso&&d.iso!==a.date;
+    body=`${stale?`<div class="card warn">Showing data for ${esc(d.date||d.iso)}, not the date you picked. Tap Check courts again.</div>`:""}
+    <p class="mut" style="margin:0 0 10px">${vs.length} venue${vs.length===1?"":"s"} with free courts, ${hr(a.from)} to ${hr(a.to)}. ${d.checked?"Last checked: "+esc(d.checked)+".":""}</p>
+    ${vs.map(v=>`<div class="card venue"><div class="vh"><b>${esc(v.n)}</b><span>${v.sl.length} slot${v.sl.length>1?"s":""}${v.min<1e9?", from "+price(v.min):""}</span></div>
+      <div class="hrs">${v.sl.map(x=>`<span class="hr">${hr(x.h)}${x.c>0?`<i>${price(x.c)}</i>`:""}</span>`).join("")}</div></div>`).join("")||'<div class="card"><p>No free courts in this time range. Try a wider range.</p></div>'}`;
+  }
+  return `<h1>Courts</h1><br>
+  <div class="card"><label class="mut">Date<input type="date" data-av="date" value="${esc(a.date)}"></label>
+    <div class="set" style="margin-top:10px">
+      <label>From <select data-av="from">${opts(6,23,a.from)}</select></label>
+      <label>To <select data-av="to">${opts(7,24,a.to)}</select></label>
+      <label>Sort <select data-av="sort"><option value="slots"${a.sort==="slots"?" selected":""}>Most slots</option><option value="price"${a.sort==="price"?" selected":""}>Cheapest</option><option value="name"${a.sort==="name"?" selected":""}>Name</option></select></label>
+    </div>
+    <button class="btn pri big" data-a="chk"${a.loading?" disabled":""}>Check courts</button></div>
+  ${body}`;
 }
 function vNext(R){
   const nr=R+1,live=S.matches.some(m=>m.r===R&&!m.done);
@@ -339,11 +521,17 @@ function vModal(){
   <div class="row"><button class="btn" data-a="mclose">Cancel</button><button class="btn pri" data-a="msave">Save score</button></div></div></div>`;
 }
 function render(){
+  {const pg=S.page,gb=document.querySelector('[data-a="gear"]'),lb=$("#livebtn");
+   $("#homebtn").hidden=pg==="home";$("#ico").hidden=pg!=="home";
+   $("#ttl").textContent=pg==="score"?"Tennis Session":pg==="courts"?"Court Availability":pg==="history"?"All-time Leaderboard":"Tennis";
+   if(gb)gb.hidden=pg!=="score";if(lb)lb.hidden=!DB_URL||pg!=="score"}
   if(!S.set.mig){S.set.mig=1;S.set.mode="total"}
   S.matches.forEach(m=>{if(!m.done){m.cap=S.set.mode==="total"?S.set.total:0;m.T=S.set.target}});
   const nv=$("#nm")?$("#nm").value:"";
-  $("#app").innerHTML=S.tab==="rounds"?vRounds():S.tab==="players"?vPlayers():vBoard();
-  $("#modal").innerHTML=SV?vSave():ED?vModal():SH?vShare():LK?vLink():"";
+  if(S.page==="home"&&DB_URL&&!S.hist.data&&!S.hist.loading&&!S.hist.err)setTimeout(loadHistory,0);
+  $("#app").innerHTML=S.page==="home"?vHome():S.page==="courts"?vCourts():S.page==="history"?vHistory():S.tab==="rounds"?vRounds():S.tab==="players"?vPlayers():vBoard();
+  $("#nav").style.display=S.page==="score"?"":"none";
+  $("#modal").innerHTML=SV?vSave():ED?vModal():SH?vShare():LK?vLink():JN?vJoin():"";
   if(SH&&!ED&&!SV)drawShare();
   if($("#nm")){$("#nm").value=nv;if(foc){$("#nm").focus();foc=false}}
   $("#nav").innerHTML=[["rounds","Rounds"],["players","Players"],["board","Leaderboard"]].map(([k,t])=>`<button class="${S.tab===k?"on":""}" data-a="tab" data-v="${k}">${t}</button>`).join("");
@@ -359,16 +547,29 @@ document.addEventListener("click",e=>{
   const b=e.target.closest("[data-a]");if(!b)return;
   const a=b.dataset.a,v=b.dataset.v,id=b.dataset.id,M=()=>S.matches.find(x=>x.id===id);
   if(a!=="reset")armed=false;
+  if(a!=="endgame")armedEnd=false;
   if(a==="tab"){S.tab=v;window.scrollTo(0,0)}
+  else if(a==="go"){S.page=v;window.scrollTo(0,0);if(v==="courts"&&!S.av.data&&!S.av.loading&&window.AVAIL_URL)setTimeout(checkCourts,0);if(v==="history")setTimeout(loadHistory,0);S.hdel=null}
+  else if(a==="home"){S.page="home";window.scrollTo(0,0)}
+  else if(a==="create"){createMatch();return}
+  else if(a==="joinbtn"){JN=true}
+  else if(a==="jnclose"){if(b.classList.contains("ov")&&e.target!==b)return;JN=false}
+  else if(a==="jngo"){const jv=($("#jnid")?$("#jnid").value:"").trim().toLowerCase();if(!/^[a-z0-9]{6,12}$/.test(jv))return toast("Enter the match ID exactly as shared (6–12 letters/numbers).");joinMatch(jv);return}
+  else if(a==="endgame"){if(!S.matches.some(m=>m.done))return toast("Finish at least one round before ending the match.");if(!armedEnd){armedEnd=true;return render()}S.ended=Date.now();S.tab="board";armedEnd=false}
+  else if(a==="resume"){S.ended=0}
+  else if(a==="hload"){loadHistory();return}
+  else if(a==="hsave"){saveHistory();return}
+  else if(a==="hdel"){if(S.hdel!==id){S.hdel=id}else{S.hdel=null;fetch(hbase()+"/"+id+".json",{method:"DELETE"}).then(r=>{if(!r.ok)throw 0;if(S.hist.data)delete S.hist.data[id];render();toast("Deleted")}).catch(()=>toast("Could not delete."))}}
   else if(a==="gear"){S.tab="rounds";S.gear=!S.gear}
   else if(a==="add")return addPlayer(v);
   else if(a==="st"){P(id).status=v;S.draft=null}
   else if(a==="rm"){S.players=S.players.filter(p=>p.id!==id);S.draft=null}
   else if(a==="courts"){S.set.courts=Math.min(4,Math.max(1,S.set.courts+ +v));S.draft=null}
   else if(a==="next"){newRound()}
+  else if(a==="chk"){checkCourts();return}
   else if(a==="round"){S.cur=+v}
   else if(a==="reshuf"){S.draft=null}
-  else if(a==="live"){if(!live){const al="abcdefghjkmnpqrstuvwxyz23456789";let c="";for(let i=0;i<8;i++)c+=al[Math.floor(Math.random()*al.length)];goLive(c)}LK=true}
+  else if(a==="live"){if(!live)goLive(genCode(8));LK=true}
   else if(a==="lkclose"){if(b.classList.contains("ov")&&e.target!==b)return;LK=false}
   else if(a==="lkcopy"){const u=location.href;
     const done=()=>toast("Link copied. Send it to your friends."),
@@ -377,7 +578,7 @@ document.addEventListener("click",e=>{
     if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(u).then(done).catch(legacy)}else legacy();
     LK=false;render();return}
   else if(a==="svclose"){if(b.classList.contains("ov")&&e.target!==b)return;if(SV){try{URL.revokeObjectURL(SV.url)}catch(er){}SV=null}}
-  else if(a==="share"){SH={tpl:"blue",title:"Tennis Session",img:null,cv:null,size:"port",pos:"bottom",titleOn:true}}
+  else if(a==="share"){SH={tpl:"blue",title:S.info.name||"Tennis Session",img:null,cv:null,size:"port",pos:"bottom",titleOn:true}}
   else if(a==="shtpl"){SH.tpl=v}
   else if(a==="shclose"){if(b.classList.contains("ov")&&e.target!==b)return;SH=null}
   else if(a==="shsave"){if(!SH.blob){toast("Still preparing the image. Try again in a moment.");return}
@@ -397,17 +598,24 @@ document.addEventListener("click",e=>{
   else if(a==="fin"){const m=M();if(m.cap?m.s1+m.s2===0:m.s1===m.s2)return toast(m.cap?"Tap a score box to enter the score first.":"Scores are tied. Keep playing or adjust the score.");m.done=true}
   else if(a==="edit"){M().done=false}
   else if(a==="delr"){const R=S.cur;S.matches=S.matches.filter(m=>m.r!==R);delete S.rest[R];S.cur=0;S.draft=null}
-  else if(a==="reset"){if(!armed){armed=true;return render()}S.matches=[];S.players=[];S.rest={};S.draft=null;S.info={place:S.info.place||""};if(live){live=false;if(es)es.close();CODE="";history.replaceState(null,"",location.pathname+location.search);setLive()}S.cur=0;S.date=0;S.tab="players";armed=false}
+  else if(a==="reset"){if(!armed){armed=true;return render()}S.matches=[];S.players=[];S.rest={};S.draft=null;S.info={place:S.info.place||""};S.ended=0;S.mid="";if(live){live=false;if(es)es.close();CODE="";history.replaceState(null,"",location.pathname+location.search);setLive()}S.cur=0;S.date=0;S.tab="players";armed=false}
   render();
 });
-document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="nm")addPlayer("here")});
-document.addEventListener("input",e=>{if(!SH)return;if(e.target.id==="shtt"){SH.title=e.target.value;drawShare()}else if(e.target.dataset.in){S.info[e.target.dataset.in]=e.target.value;save();drawShare()}});
+document.addEventListener("keydown",e=>{
+  if(e.key==="Enter"&&e.target.id==="nm")addPlayer("here");
+  else if(e.key==="Enter"&&e.target.id==="jnid"){const jv=(e.target.value||"").trim().toLowerCase();if(/^[a-z0-9]{6,12}$/.test(jv))joinMatch(jv);else toast("Enter the match ID exactly as shared (6–12 letters/numbers).")}
+});
+document.addEventListener("input",e=>{
+  if(e.target.dataset.ev){S.info[e.target.dataset.ev]=e.target.value;save();return}
+  if(!SH)return;if(e.target.id==="shtt"){SH.title=e.target.value;drawShare()}else if(e.target.dataset.in){S.info[e.target.dataset.in]=e.target.value;save();drawShare()}});
 document.addEventListener("change",e=>{
   if(e.target.dataset.sh&&SH){const el=e.target;SH[el.dataset.sh]=el.type==="checkbox"?el.checked:el.value;drawShare();return}
   if(e.target.id==="shph"){const f=e.target.files[0];if(!f||!SH)return;const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{SH.img=im;drawShare()};im.src=fr.result};fr.readAsDataURL(f);return}
+  const hs=e.target.dataset.hs;if(hs){S.hist.sort=e.target.value;render();return}
+  const av=e.target.dataset.av;if(av){S.av[av]=["from","to"].includes(av)?+e.target.value:e.target.value;if(S.av.to<=S.av.from)S.av.to=Math.min(24,S.av.from+1);if(av==="date"&&e.target.value&&window.AVAIL_URL){checkCourts();return}render();return}
   const s=e.target.dataset.s;if(!s)return;S.set[s]=["target","total"].includes(s)?+e.target.value:e.target.value;S.draft=null;save();if(s==="mode")render()});
 function node(){return DB_URL.replace(/\/$/,"")+"/matches/"+CODE+".json"}
-function setLive(st){const b=$("#livebtn");if(!b)return;b.hidden=!DB_URL;b.textContent=!live?"Go live":st==="err"?"Offline":"● Live"}
+function setLive(st){const b=$("#livebtn");if(!b)return;b.hidden=!DB_URL||S.page!=="score";b.textContent=!live?"Go live":st==="err"?"Offline":"● Live"}
 function push(){if(!live||applying)return;clearTimeout(pt);
   pt=setTimeout(()=>{const o={};SHARED.forEach(k=>o[k]=S[k]);
     fetch(node(),{method:"PUT",body:JSON.stringify({s:JSON.stringify(o),c:CID,t:Date.now()})}).then(r=>{if(!r.ok)throw 0;setLive("ok")}).catch(()=>setLive("err"))},200)}
