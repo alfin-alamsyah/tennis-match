@@ -403,13 +403,13 @@ function vCourts(){
     const times=d.times||[],vs=[];
     (d.venues||[]).forEach(v=>{
       const sl=times.map((t,i)=>({h:+t.slice(0,2),c:v.s[i]})).filter(x=>x.c!==null&&x.c!==0&&x.h>=a.from&&x.h<a.to);
-      if(sl.length)vs.push({n:v.n,sl,min:Math.min(...sl.map(x=>x.c>0?x.c:1e9))});
+      if(sl.length)vs.push({n:v.n,u:v.u,sl,min:Math.min(...sl.map(x=>x.c>0?x.c:1e9))});
     });
     vs.sort(a.sort==="price"?(x,y)=>x.min-y.min:a.sort==="name"?(x,y)=>x.n.localeCompare(y.n):(x,y)=>y.sl.length-x.sl.length||x.min-y.min);
     const stale=d.iso&&d.iso!==a.date;
     body=`${stale?`<div class="card warn">Showing data for ${esc(d.date||d.iso)}, not the date you picked. Tap Check courts again.</div>`:""}
-    <p class="mut" style="margin:0 0 10px">${vs.length} venue${vs.length===1?"":"s"} with free courts, ${hr(a.from)} to ${hr(a.to)}. ${d.checked?"Last checked: "+esc(d.checked)+".":""}</p>
-    ${vs.map(v=>`<div class="card venue"><div class="vh"><b>${esc(v.n)}</b><span>${v.sl.length} slot${v.sl.length>1?"s":""}${v.min<1e9?", from "+price(v.min):""}</span></div>
+    <p class="mut" style="margin:0 0 10px">${vs.length} venue${vs.length===1?"":"s"} with free courts, ${hr(a.from)} to ${hr(a.to)}. ${d.checked?"Last checked: "+esc(d.checked)+".":""} Tap a venue name to open it on AYO.</p>
+    ${vs.map(v=>`<div class="card venue"><div class="vh"><b>${v.u?`<a href="${esc(v.u)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">${esc(v.n)}</a>`:esc(v.n)}</b><span>${v.sl.length} slot${v.sl.length>1?"s":""}${v.min<1e9?", from "+price(v.min):""}</span></div>
       <div class="hrs">${v.sl.map(x=>`<span class="hr">${hr(x.h)}${x.c>0?`<i>${price(x.c)}</i>`:""}</span>`).join("")}</div></div>`).join("")||'<div class="card"><p>No free courts in this time range. Try a wider range.</p></div>'}`;
   }
   return `<h1>Courts</h1><br>
